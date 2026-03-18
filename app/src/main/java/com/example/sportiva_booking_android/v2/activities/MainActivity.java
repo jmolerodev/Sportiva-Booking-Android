@@ -1,4 +1,4 @@
-package com.example.sportiva_booking_android;
+package com.example.sportiva_booking_android.v2.activities;
 
 import android.os.Bundle;
 
@@ -7,6 +7,8 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
+
+import com.example.sportiva_booking_android.R;
 
 public class MainActivity extends AppCompatActivity {
 

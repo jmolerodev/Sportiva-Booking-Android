@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "969230804739",
+    "project_id": "sportivabooking",
+    "storage_bucket": "sportivabooking.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:969230804739:android:937329c608a4075b2d2b36",
+        "android_client_info": {
+          "package_name": "com.example.sportiva_booking_android"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDJNL-7gXb4GJ9ZjGPTrAYbjYFIziBOlM0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
