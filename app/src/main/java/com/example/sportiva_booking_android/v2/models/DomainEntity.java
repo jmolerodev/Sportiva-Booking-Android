@@ -1,6 +1,8 @@
 package com.example.sportiva_booking_android.v2.models;
 
-import com.google.firebase.firestore.IgnoreExtraProperties;
+
+import com.google.firebase.database.Exclude;
+import com.google.firebase.database.IgnoreExtraProperties;
 
 import java.io.Serializable;
 
@@ -16,6 +18,7 @@ public class DomainEntity implements Serializable {
     }
 
     /*Getters y Setters de la Clase*/
+    @Exclude
     public String getId() {
         return id;
     }

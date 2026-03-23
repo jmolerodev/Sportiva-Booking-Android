@@ -2,9 +2,10 @@ package com.example.sportiva_booking_android.v2.activities;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
-import android.widget.Toast;
+import android.widget.TextView;
 
 import androidx.activity.EdgeToEdge;
 import androidx.annotation.NonNull;
@@ -13,6 +14,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import com.example.sportiva_booking_android.R;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
+import com.google.android.material.snackbar.Snackbar;
 import com.google.firebase.auth.AuthResult;
 import com.google.firebase.auth.FirebaseAuth;
 
@@ -25,6 +27,7 @@ public class LoginActivity extends AppCompatActivity {
     private EditText etEmail;
     private EditText etPassword;
     private Button btnLogin;
+    private TextView tvGoToSignUp;
 
     /*Variables donde guardaremos los datos introducidos por el usuario*/
     private String userEmail;
@@ -46,9 +49,20 @@ public class LoginActivity extends AppCompatActivity {
         etEmail = findViewById(R.id.etEmailLogin);
         etPassword = findViewById(R.id.etPasswordLogin);
         btnLogin = findViewById(R.id.btnLogin);
+        tvGoToSignUp = findViewById(R.id.tvRegisterLogin);
 
 
         btnLogin.setOnClickListener(v -> login());
+
+        tvGoToSignUp.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(LoginActivity.this, SignUpActivity.class);
+                startActivity(intent);
+                finish();
+            }
+        });
+
     }
 
     /**
@@ -62,7 +76,9 @@ public class LoginActivity extends AppCompatActivity {
 
         /*Validación de que ambos campos han sido rellenados*/
         if(userEmail.isEmpty() || userPassword.isEmpty()){
-            Toast.makeText(this, "Por favor, rellena todos los campos para continuar", Toast.LENGTH_LONG).show();
+            Snackbar.make(findViewById(android.R.id.content),
+                    "Por favor, rellena todos los campos para continuar",
+                    Snackbar.LENGTH_LONG).show();
             return;
         }
 
@@ -73,9 +89,9 @@ public class LoginActivity extends AppCompatActivity {
                     /*Si el login ha sido correcto*/
                     if(task.isSuccessful()){
 
-                        Toast.makeText(getApplicationContext(),
+                        Snackbar.make(findViewById(android.R.id.content),
                                 "¡Bienvenido de nuevo a Sportiva Booking!",
-                                Toast.LENGTH_LONG).show();
+                                Snackbar.LENGTH_LONG).show();
 
                         /*Redirigimos al usuario a la pantalla principal*/
                         Intent intent = new Intent(LoginActivity.this, MainActivity.class);
@@ -84,9 +100,9 @@ public class LoginActivity extends AppCompatActivity {
 
                     }else{
 
-                        Toast.makeText(getApplicationContext(),
+                        Snackbar.make(findViewById(android.R.id.content),
                                 "Error al iniciar sesión. Comprueba tus credenciales",
-                                Toast.LENGTH_LONG).show();
+                                Snackbar.LENGTH_LONG).show();
 
                     }
                 });

@@ -1,7 +1,8 @@
 package com.example.sportiva_booking_android.v2.models;
 
-import com.google.firebase.firestore.IgnoreExtraProperties;
-import com.google.firebase.firestore.auth.User;
+
+import com.google.firebase.database.Exclude;
+import com.google.firebase.database.IgnoreExtraProperties;
 
 @IgnoreExtraProperties
 public class UserAccount extends DomainEntity{
@@ -17,6 +18,7 @@ public class UserAccount extends DomainEntity{
     }
 
     /*Getters y Setters de la Clase*/
+    @Exclude
     public String getEmail() {
         return email;
     }
@@ -25,6 +27,7 @@ public class UserAccount extends DomainEntity{
         this.email = email;
     }
 
+    @Exclude
     public String getPassword() {
         return password;
     }
