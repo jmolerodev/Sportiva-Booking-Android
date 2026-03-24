@@ -33,7 +33,7 @@ public class SignUpActivity extends AppCompatActivity {
     private RadioGroup rgRol;
     private EditText etNombre, etApellidos, etEmail, etPassword, etConfirmPassword;
     private LinearLayout layoutCamposCliente, layoutCamposProfesional;
-    private Button btnRegister;
+    private Button btnRegister, btnCancelar;
     private TextView tvLogin;
     private EditText etDni, etDireccion;
     private EditText etDescripcion, etAnnosExperiencia;
@@ -66,6 +66,7 @@ public class SignUpActivity extends AppCompatActivity {
         layoutCamposCliente = findViewById(R.id.layoutCamposCliente);
         layoutCamposProfesional = findViewById(R.id.layoutCamposProfesional);
         btnRegister = findViewById(R.id.btnRegister);
+        btnCancelar = findViewById(R.id.btnCancelar);
         tvLogin = findViewById(R.id.tvLoginRegister);
         etDni = findViewById(R.id.etDniRegister);
         etDireccion = findViewById(R.id.etDireccionRegister);
@@ -101,10 +102,39 @@ public class SignUpActivity extends AppCompatActivity {
 
         btnRegister.setOnClickListener(v -> register());
 
+        btnCancelar.setOnClickListener(v -> limpiarFormulario());
+
         tvLogin.setOnClickListener(v -> {
             startActivity(new Intent(SignUpActivity.this, LoginActivity.class));
             finish();
         });
+    }
+
+    /**
+     * Limpia todos los campos del formulario y resetea el estado al inicial
+     */
+    private void limpiarFormulario() {
+        /*Limpiamos los campos comunes*/
+        etNombre.setText("");
+        etApellidos.setText("");
+        etEmail.setText("");
+        etPassword.setText("");
+        etConfirmPassword.setText("");
+
+        /*Limpiamos los campos de Cliente*/
+        etDni.setText("");
+        etDireccion.setText("");
+
+        /*Limpiamos los campos de Profesional*/
+        etDescripcion.setText("");
+        etAnnosExperiencia.setText("");
+        spinnerEspecialidad.setSelection(0);
+
+        /*Deseleccionamos el RadioGroup y ocultamos los layouts condicionales*/
+        rgRol.clearCheck();
+        layoutCamposCliente.setVisibility(View.GONE);
+        layoutCamposProfesional.setVisibility(View.GONE);
+        rolSeleccionado = null;
     }
 
     /**
@@ -200,8 +230,6 @@ public class SignUpActivity extends AppCompatActivity {
         if (errores.length() > 0) {
 
             String mensaje = errores.toString();
-
-
             mensaje = mensaje.substring(0, mensaje.length() - 2);
 
             Snackbar.make(findViewById(android.R.id.content),
