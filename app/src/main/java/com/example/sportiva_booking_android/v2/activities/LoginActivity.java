@@ -175,6 +175,9 @@ public class LoginActivity extends AppCompatActivity {
         userEmail    = etEmail.getText().toString().trim();
         userPassword = etPassword.getText().toString().trim();
 
+        /*Limpiamos los errores visuales previos antes de revalidar*/
+        limpiarErrores();
+
         /*Validamos los campos del formulario*/
         if (!validateFields()) return;
 
@@ -230,45 +233,44 @@ public class LoginActivity extends AppCompatActivity {
     }
 
     /**
-     * Valida el email siguiendo exactamente la lógica del customEmailValidator() de Angular
+     * Valida el email siguiendo exactamente la lógica del customEmailValidator() de Angular.
+     * Marca el error visual en rojo directamente en el TextInputLayout.
      */
     private boolean validateEmail() {
 
-        /*Si el campo está vacío, no mostramos error todavía*/
-        if (userEmail == null || userEmail.isEmpty()) {
-            tilEmail.setError(null);
-            return true;
+        if (userEmail.isEmpty()) {
+            tilEmail.setError("El correo electrónico es obligatorio");
+            return false;
         }
 
         /*Regex donde se valida el formato del correo electrónico*/
         String simpleEmailRegex = "^[^@]+@[^@]+\\.[a-zA-Z]{2,}$";
 
-        boolean valid = userEmail.matches(simpleEmailRegex);
+        if (!userEmail.matches(simpleEmailRegex)) {
+            tilEmail.setError("Introduce un correo electrónico válido");
+            return false;
+        }
 
-        tilEmail.setError(valid ? null : "Introduce un correo electrónico válido");
-
-        return valid;
+        tilEmail.setError(null);
+        return true;
     }
 
     /**
-     * Valida la contraseña siguiendo exactamente la lógica del customPasswordValidator() de Angular
+     * Valida la contraseña siguiendo exactamente la lógica del customPasswordValidator() de Angular.
+     * Marca el error visual en rojo directamente en el TextInputLayout.
      */
     private boolean validatePassword() {
 
-        /*Si el campo está vacío, no mostramos error todavía*/
-        if (userPassword == null || userPassword.isEmpty()) {
-            tilPassword.setError(null);
-            return true;
+        if (userPassword.isEmpty()) {
+            tilPassword.setError("La contraseña es obligatoria");
+            return false;
         }
 
         /*Regex donde se valida el formato de la contraseña*/
         String passwordRegex = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[^A-Za-z\\d])[A-Za-z\\d\\W]{9,}$";
 
-        boolean valid = userPassword.matches(passwordRegex);
+        if (!userPassword.matches(passwordRegex)) {
 
-        if (!valid) {
-
-            /*Mensaje completo en rojo debajo del campo*/
             StringBuilder sb = new StringBuilder();
             sb.append("La contraseña no cumple con el formato correcto:\n");
             sb.append("• 9 caracteres mínimo\n");
@@ -278,26 +280,19 @@ public class LoginActivity extends AppCompatActivity {
             sb.append("• 1 carácter especial");
 
             tilPassword.setError(sb.toString());
-
-        } else {
-            tilPassword.setError(null);
-        }
-
-        return valid;
-    }
-
-    /**
-     * Método mediante el cual validamos los campos del formulario de inicio de sesión
-     */
-    private boolean validateFields() {
-
-        /*Comprobamos que los campos no estén vacíos*/
-        if (userEmail.isEmpty() || userPassword.isEmpty()) {
-            showCenteredSnackbar("Por favor, rellena los campos correctamente para iniciar sesión");
             return false;
         }
 
-        /*Validamos el formato del email y la contraseña*/
+        tilPassword.setError(null);
+        return true;
+    }
+
+    /**
+     * Método mediante el cual validamos los campos del formulario de inicio de sesión.
+     * Combina errores visuales en rojo bajo cada campo + Snackbar general si hay algún error.
+     */
+    private boolean validateFields() {
+
         boolean emailValid    = validateEmail();
         boolean passwordValid = validatePassword();
 
@@ -307,6 +302,14 @@ public class LoginActivity extends AppCompatActivity {
         }
 
         return true;
+    }
+
+    /**
+     * Limpia los errores visuales de todos los TextInputLayout del formulario
+     */
+    private void limpiarErrores() {
+        tilEmail.setError(null);
+        tilPassword.setError(null);
     }
 
     /**

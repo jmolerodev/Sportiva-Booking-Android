@@ -45,8 +45,6 @@ public class ResetPassword extends AppCompatActivity {
         /*Inicializamos Firebase Auth*/
         firebaseAuth = FirebaseAuth.getInstance();
 
-
-
         /*Inicializamos los componentes de la vista*/
         etEmailReset        = findViewById(R.id.etEmailReset);
         tilEmailReset       = findViewById(R.id.tilEmailReset);
@@ -80,40 +78,36 @@ public class ResetPassword extends AppCompatActivity {
     }
 
     /**
-     * Valida el email siguiendo exactamente la lógica del customEmailValidator() de Angular
+     * Valida el email siguiendo exactamente la lógica del customEmailValidator() de Angular.
+     * Marca el error visual en rojo directamente en el TextInputLayout.
      */
     private boolean validateEmail() {
 
-        /*Si el campo está vacío, no mostramos error todavía*/
-        if (userEmail == null || userEmail.isEmpty()) {
-            tilEmailReset.setError(null);
-            return true;
+        if (userEmail.isEmpty()) {
+            tilEmailReset.setError("El correo electrónico es obligatorio");
+            return false;
         }
 
         /*Regex donde se valida el formato del correo electrónico*/
         String simpleEmailRegex = "^[^@]+@[^@]+\\.[a-zA-Z]{2,}$";
 
-        boolean valid = userEmail.matches(simpleEmailRegex);
-
-        tilEmailReset.setError(valid ? null : "Introduce un correo electrónico válido");
-
-        return valid;
-    }
-
-    /**
-     * Valida los campos del formulario antes de intentar enviar el correo
-     */
-    private boolean validateFields() {
-
-        /*Comprobamos que el campo no esté vacío*/
-        if (userEmail.isEmpty()) {
-            showCenteredSnackbar("Por favor, rellena todos los campos para continuar");
+        if (!userEmail.matches(simpleEmailRegex)) {
+            tilEmailReset.setError("Introduce un correo electrónico válido");
             return false;
         }
 
-        /*Validamos el formato del email*/
+        tilEmailReset.setError(null);
+        return true;
+    }
+
+    /**
+     * Valida los campos del formulario antes de intentar enviar el correo.
+     * Combina errores visuales en rojo bajo el campo + Snackbar general si hay algún error.
+     */
+    private boolean validateFields() {
+
         if (!validateEmail()) {
-            showCenteredSnackbar("El formato del correo electrónico no es válido");
+            showCenteredSnackbar("Por favor, rellena los campos correctamente para continuar");
             return false;
         }
 
@@ -130,11 +124,11 @@ public class ResetPassword extends AppCompatActivity {
                 ? etEmailReset.getText().toString().trim()
                 : "";
 
+        /*Limpiamos cualquier error visual anterior antes de revalidar*/
+        tilEmailReset.setError(null);
+
         /*Validamos los campos antes de continuar*/
         if (!validateFields()) return;
-
-        /*Limpiamos cualquier error anterior si la validación fue bien*/
-        tilEmailReset.setError(null);
 
         /*Enviamos el correo de restablecimiento via Firebase Auth*/
         firebaseAuth.sendPasswordResetEmail(userEmail)

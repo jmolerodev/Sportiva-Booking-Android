@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
+
 <androidx.constraintlayout.widget.ConstraintLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
@@ -10,7 +11,7 @@
     android:padding="24dp"
     tools:context=".v2.activities.LoginActivity">
 
-
+    ```
     <ImageView
         android:id="@+id/imageView"
         android:layout_width="160dp"
@@ -22,7 +23,6 @@
         app:layout_constraintTop_toTopOf="parent"
         app:srcCompat="@drawable/logo_app"
         tools:ignore="NotSibling" />
-
 
     <androidx.cardview.widget.CardView
         android:id="@+id/cardForm"
@@ -37,14 +37,12 @@
         app:layout_constraintTop_toBottomOf="@id/imageView"
         app:layout_constraintVertical_chainStyle="packed">
 
-
         <LinearLayout
             android:id="@+id/linearMain"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
             android:padding="24dp">
-
 
             <TextView
                 android:layout_width="wrap_content"
@@ -56,7 +54,6 @@
                 android:textSize="22sp"
                 android:textStyle="bold" />
 
-
             <TextView
                 android:id="@+id/tvEmailLogin"
                 android:layout_width="wrap_content"
@@ -66,7 +63,6 @@
                 android:textColor="@color/black"
                 android:textSize="14sp"
                 android:textStyle="bold" />
-
 
             <com.google.android.material.textfield.TextInputLayout
                 android:id="@+id/tilEmailLogin"
@@ -78,7 +74,10 @@
                 app:boxCornerRadiusBottomStart="12dp"
                 app:boxCornerRadiusTopEnd="12dp"
                 app:boxCornerRadiusTopStart="12dp"
-                app:boxStrokeColor="@color/background"
+                app:boxStrokeColor="@color/black"
+                app:boxStrokeErrorColor="@color/red"
+                app:errorTextColor="@color/red"
+                app:hintTextColor="@color/black"
                 app:hintEnabled="false">
 
                 <com.google.android.material.textfield.TextInputEditText
@@ -86,6 +85,8 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:hint="Introduce tu correo"
+                    android:background="@null"
+                    android:textColor="@color/black"
                     android:textColorHint="@color/black"
                     android:textAlignment="center"
                     android:inputType="textEmailAddress"
@@ -93,7 +94,6 @@
                     android:textSize="14sp" />
 
             </com.google.android.material.textfield.TextInputLayout>
-
 
             <TextView
                 android:id="@+id/tvPasswordLogin"
@@ -105,7 +105,6 @@
                 android:textSize="14sp"
                 android:textStyle="bold" />
 
-
             <com.google.android.material.textfield.TextInputLayout
                 android:id="@+id/tilPasswordLogin"
                 style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
@@ -116,7 +115,10 @@
                 app:boxCornerRadiusBottomStart="12dp"
                 app:boxCornerRadiusTopEnd="12dp"
                 app:boxCornerRadiusTopStart="12dp"
-                app:boxStrokeColor="@color/background"
+                app:boxStrokeColor="@color/black"
+                app:boxStrokeErrorColor="@color/red"
+                app:errorTextColor="@color/red"
+                app:hintTextColor="@color/black"
                 app:hintEnabled="false"
                 app:passwordToggleEnabled="true"
                 app:passwordToggleTint="@color/text">
@@ -126,6 +128,8 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:hint="Introduce tu contraseña"
+                    android:background="@null"
+                    android:textColor="@color/black"
                     android:textColorHint="@color/black"
                     android:textAlignment="center"
                     android:inputType="textPassword"
@@ -133,7 +137,6 @@
                     android:textSize="14sp" />
 
             </com.google.android.material.textfield.TextInputLayout>
-
 
             <CheckBox
                 android:id="@+id/cbRememberLogin"
@@ -144,7 +147,6 @@
                 android:textColor="@color/black"
                 android:textSize="14sp"
                 android:textStyle="bold" />
-
 
             <Button
                 android:id="@+id/btnLogin"
@@ -162,7 +164,6 @@
 
     </androidx.cardview.widget.CardView>
 
-
     <LinearLayout
         android:id="@+id/linearFooter"
         android:layout_width="match_parent"
@@ -175,7 +176,6 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/cardForm">
 
-
         <TextView
             android:id="@+id/tvForgotPasswordLogin"
             android:layout_width="wrap_content"
@@ -186,7 +186,6 @@
             android:textColor="@color/text"
             android:textSize="14sp"
             android:textStyle="bold" />
-
 
         <TextView
             android:id="@+id/tvRegisterLogin"
@@ -199,5 +198,6 @@
             android:textStyle="bold" />
 
     </LinearLayout>
+    ```
 
 </androidx.constraintlayout.widget.ConstraintLayout>

@@ -2,47 +2,38 @@ package com.example.sportiva_booking_android.v2.activities;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.view.Gravity;
 import android.view.View;
-import android.widget.ArrayAdapter;
 import android.widget.Button;
-import android.widget.EditText;
-import android.widget.LinearLayout;
-import android.widget.RadioGroup;
-import android.widget.Spinner;
 import android.widget.TextView;
 
 import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.example.sportiva_booking_android.R;
-import com.example.sportiva_booking_android.v2.enums.Especialidad;
 import com.example.sportiva_booking_android.v2.enums.Rol;
-import com.example.sportiva_booking_android.v2.models.Administrador;
 import com.example.sportiva_booking_android.v2.models.Cliente;
-import com.example.sportiva_booking_android.v2.models.Profesional;
-import com.example.sportiva_booking_android.v2.services.AdministradorService;
 import com.example.sportiva_booking_android.v2.services.ClienteService;
-import com.example.sportiva_booking_android.v2.services.ProfesionalService;
 import com.google.android.material.snackbar.Snackbar;
+import com.google.android.material.textfield.TextInputLayout;
+import com.google.android.material.textfield.TextInputEditText;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 
 public class SignUpActivity extends AppCompatActivity {
 
     /*Componentes de la vista*/
-    private RadioGroup rgRol;
-    private EditText etNombre, etApellidos, etEmail, etPassword, etConfirmPassword;
-    private LinearLayout layoutCamposCliente, layoutCamposProfesional;
-    private Button btnRegister, btnCancelar;
+    private TextInputLayout tilNombre, tilApellidos, tilEmail, tilPassword, tilConfirmPassword, tilDni, tilDireccion;
+    private TextInputEditText etNombre, etApellidos, etEmail, etPassword, etConfirmPassword, etDni, etDireccion;
+    private Button btnRegister;
     private TextView tvLogin;
-    private EditText etDni, etDireccion;
-    private EditText etDescripcion, etAnnosExperiencia;
-    private Spinner spinnerEspecialidad;
-    private Rol rolSeleccionado = null;
+
+    /*Servicios y autenticación*/
     private FirebaseAuth firebaseAuth;
     private ClienteService clienteService;
-    private ProfesionalService profesionalService;
-    private AdministradorService administradorService;
+
+    /*Variable booleana que nos indica si el formulario se está procesando (para evitar doble envío)*/
+    private boolean isLoading = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -53,274 +44,320 @@ public class SignUpActivity extends AppCompatActivity {
         /*Inicializamos Firebase Auth y los servicios*/
         firebaseAuth = FirebaseAuth.getInstance();
         clienteService = new ClienteService(this);
-        profesionalService = new ProfesionalService(this);
-        administradorService = new AdministradorService(this);
 
         /*Inicializamos los componentes de la vista*/
-        rgRol = findViewById(R.id.rgRolRegister);
-        etNombre = findViewById(R.id.etNombreRegister);
-        etApellidos = findViewById(R.id.etApellidosRegister);
-        etEmail = findViewById(R.id.etEmailRegister);
-        etPassword = findViewById(R.id.etPasswordRegister);
-        etConfirmPassword = findViewById(R.id.etConfirmPasswordRegister);
-        layoutCamposCliente = findViewById(R.id.layoutCamposCliente);
-        layoutCamposProfesional = findViewById(R.id.layoutCamposProfesional);
+        tilNombre            = findViewById(R.id.tilNombreRegister);
+        tilApellidos         = findViewById(R.id.tilApellidosRegister);
+        tilEmail             = findViewById(R.id.tilEmailRegister);
+        tilPassword          = findViewById(R.id.tilPasswordRegister);
+        tilConfirmPassword   = findViewById(R.id.tilConfirmPasswordRegister);
+        tilDni               = findViewById(R.id.tilDniRegister);
+        tilDireccion         = findViewById(R.id.tilDireccionRegister);
+
+        etNombre             = findViewById(R.id.etNombreRegister);
+        etApellidos          = findViewById(R.id.etApellidosRegister);
+        etEmail              = findViewById(R.id.etEmailRegister);
+        etPassword           = findViewById(R.id.etPasswordRegister);
+        etConfirmPassword    = findViewById(R.id.etConfirmPasswordRegister);
+        etDni                = findViewById(R.id.etDniRegister);
+        etDireccion          = findViewById(R.id.etDireccionRegister);
+
         btnRegister = findViewById(R.id.btnRegister);
-        btnCancelar = findViewById(R.id.btnCancelar);
-        tvLogin = findViewById(R.id.tvLoginRegister);
-        etDni = findViewById(R.id.etDniRegister);
-        etDireccion = findViewById(R.id.etDireccionRegister);
-        etDescripcion = findViewById(R.id.etDescripcionRegister);
-        etAnnosExperiencia = findViewById(R.id.etAnnosExperienciaRegister);
-        spinnerEspecialidad = findViewById(R.id.spinnerEspecialidadRegister);
+        tvLogin     = findViewById(R.id.tvLoginRegister);
 
-        /*Cargamos los valores del enum Especialidad en el Spinner*/
-        ArrayAdapter<Especialidad> adapter = new ArrayAdapter<>(
-                this,
-                android.R.layout.simple_spinner_item,
-                Especialidad.values()
+        /*Listener del botón de registro*/
+        btnRegister.setOnClickListener(v -> signUp());
+
+        /*Listener para navegar al Login*/
+        tvLogin.setOnClickListener(v -> navigateToLogin());
+    }
+
+    /**
+     * Método utilitario para mostrar Snackbars centrados
+     */
+    private void showCenteredSnackbar(String message) {
+
+        Snackbar snackbar = Snackbar.make(findViewById(android.R.id.content),
+                message,
+                Snackbar.LENGTH_LONG);
+
+        /*Centramos el texto del Snackbar*/
+        TextView textView = snackbar.getView().findViewById(
+                com.google.android.material.R.id.snackbar_text
         );
-        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-        spinnerEspecialidad.setAdapter(adapter);
 
-        /*Listener del RadioGroup para mostrar/ocultar campos según el rol seleccionado*/
-        rgRol.setOnCheckedChangeListener((group, checkedId) -> {
-            if (checkedId == R.id.rbCliente) {
-                rolSeleccionado = Rol.CLIENTE;
-                layoutCamposCliente.setVisibility(View.VISIBLE);
-                layoutCamposProfesional.setVisibility(View.GONE);
-            } else if (checkedId == R.id.rbProfesional) {
-                rolSeleccionado = Rol.PROFESIONAL;
-                layoutCamposCliente.setVisibility(View.GONE);
-                layoutCamposProfesional.setVisibility(View.VISIBLE);
-            } else if (checkedId == R.id.rbAdministrador) {
-                rolSeleccionado = Rol.ADMINISTRADOR;
-                layoutCamposCliente.setVisibility(View.GONE);
-                layoutCamposProfesional.setVisibility(View.GONE);
-            }
-        });
+        textView.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
+        textView.setGravity(Gravity.CENTER_HORIZONTAL);
 
-        btnRegister.setOnClickListener(v -> register());
-
-        btnCancelar.setOnClickListener(v -> limpiarFormulario());
-
-        tvLogin.setOnClickListener(v -> {
-            startActivity(new Intent(SignUpActivity.this, LoginActivity.class));
-            finish();
-        });
+        snackbar.show();
     }
 
     /**
-     * Limpia todos los campos del formulario y resetea el estado al inicial
+     * Método principal que gestiona el registro de un nuevo cliente en el sistema.
+     * Replica la lógica del componente Angular SignUp: primero valida el formulario,
+     * luego verifica que el DNI no esté registrado, y finalmente crea el usuario
+     * en Firebase Auth y guarda sus datos en la base de datos.
      */
-    private void limpiarFormulario() {
-        /*Limpiamos los campos comunes*/
-        etNombre.setText("");
-        etApellidos.setText("");
-        etEmail.setText("");
-        etPassword.setText("");
-        etConfirmPassword.setText("");
+    private void signUp() {
 
-        /*Limpiamos los campos de Cliente*/
-        etDni.setText("");
-        etDireccion.setText("");
+        /*Evitamos doble envío mientras se procesa la petición*/
+        if (isLoading) return;
 
-        /*Limpiamos los campos de Profesional*/
-        etDescripcion.setText("");
-        etAnnosExperiencia.setText("");
-        spinnerEspecialidad.setSelection(0);
-
-        /*Deseleccionamos el RadioGroup y ocultamos los layouts condicionales*/
-        rgRol.clearCheck();
-        layoutCamposCliente.setVisibility(View.GONE);
-        layoutCamposProfesional.setVisibility(View.GONE);
-        rolSeleccionado = null;
-    }
-
-    /**
-     * Método mediante el cual gestionamos el registro del usuario según el rol seleccionado
-     */
-    private void register() {
-
-        /*Obtenemos los valores comunes introducidos por el usuario*/
-        String nombre = etNombre.getText().toString().trim();
-        String apellidos = etApellidos.getText().toString().trim();
-        String email = etEmail.getText().toString().trim();
-        String password = etPassword.getText().toString().trim();
+        /*Obtenemos los valores introducidos por el usuario*/
+        String nombre          = etNombre.getText().toString().trim();
+        String apellidos       = etApellidos.getText().toString().trim();
+        String email           = etEmail.getText().toString().trim();
+        String password        = etPassword.getText().toString().trim();
         String confirmPassword = etConfirmPassword.getText().toString().trim();
+        String dni             = etDni.getText().toString().trim().toUpperCase();
+        String direccion       = etDireccion.getText().toString().trim();
 
-        /*Validación de campos comunes*/
-        if (rolSeleccionado == null || nombre.isEmpty() || apellidos.isEmpty()
-                || email.isEmpty() || password.isEmpty() || confirmPassword.isEmpty()) {
-            Snackbar.make(findViewById(android.R.id.content),
-                    "Por favor, rellena todos los campos para continuar",
-                    Snackbar.LENGTH_LONG).show();
+        /*Limpiamos los errores previos antes de revalidar*/
+        limpiarErrores();
+
+        /*Validamos todos los campos del formulario antes de proceder*/
+        if (!validarFormulario(nombre, apellidos, email, password, confirmPassword, dni, direccion)) {
+            /*Snackbar general cuando hay errores de validación*/
+            showCenteredSnackbar("Por favor, rellena los campos correctamente para crear tu cuenta");
             return;
         }
 
-        /*Validación de que las contraseñas coinciden*/
-        if (!password.equals(confirmPassword)) {
-            Snackbar.make(findViewById(android.R.id.content),
-                    "Las contraseñas no coinciden",
-                    Snackbar.LENGTH_LONG).show();
-            return;
-        }
+        isLoading = true;
+        btnRegister.setEnabled(false);
 
-        /*Validación detallada de contraseña*/
-        if (!validarPasswordConMensaje(password)) {
-            return;
-        }
+        /*Comprobamos si el DNI ya está registrado antes de crear el usuario en Firebase Auth*/
+        clienteService.isDniAlreadyRegistered(dni, dniExiste -> {
 
-        /*Creamos el usuario en Firebase Auth y luego lo guardamos en la Base de Datos*/
-        firebaseAuth.createUserWithEmailAndPassword(email, password)
-                .addOnCompleteListener(task -> {
+            if (dniExiste) {
+                tilDni.setError("El DNI introducido ya está registrado en el sistema");
+                showCenteredSnackbar("El DNI introducido ya está registrado en el sistema");
+                resetLoading();
+                return;
+            }
 
-                    if (task.isSuccessful()) {
+            /*Si el DNI es único, procedemos con el registro en Firebase Auth*/
+            firebaseAuth.createUserWithEmailAndPassword(email, password)
+                    .addOnCompleteListener(task -> {
 
-                        FirebaseUser firebaseUser = firebaseAuth.getCurrentUser();
-                        String uid = firebaseUser.getUid();
+                        if (task.isSuccessful()) {
 
-                        switch (rolSeleccionado) {
-                            case CLIENTE:
-                                registrarCliente(uid, nombre, apellidos, email, password);
-                                break;
-                            case PROFESIONAL:
-                                registrarProfesional(uid, nombre, apellidos, email, password);
-                                break;
-                            case ADMINISTRADOR:
-                                registrarAdministrador(uid, nombre, apellidos, email, password);
-                                break;
+                            FirebaseUser firebaseUser = firebaseAuth.getCurrentUser();
+                            String uid = firebaseUser.getUid();
+
+                            /*Construimos el objeto Cliente con los datos del formulario*/
+                            Cliente nuevoCliente = new Cliente();
+                            nuevoCliente.setId(uid);
+                            nuevoCliente.setNombre(nombre);
+                            nuevoCliente.setApellidos(apellidos);
+                            nuevoCliente.setEmail(email);
+                            nuevoCliente.setPassword(password);
+                            nuevoCliente.setRol(Rol.CLIENTE);
+                            nuevoCliente.setFoto("");
+                            nuevoCliente.setDni(dni);
+                            nuevoCliente.setDireccion(direccion);
+                            nuevoCliente.setFecha_alta(System.currentTimeMillis());
+                            nuevoCliente.setIs_active(true);
+
+                            clienteService.insertCliente(nuevoCliente);
+                            onRegistroExitoso();
+
+                        } else {
+
+                            /*Gestionamos los errores específicos de Firebase Auth*/
+                            gestionarErrorFirebase(task.getException());
+                            resetLoading();
+
                         }
-
-                    } else {
-                        Snackbar.make(findViewById(android.R.id.content),
-                                "Error al crear la cuenta. Inténtalo de nuevo.",
-                                Snackbar.LENGTH_LONG).show();
-                    }
-                });
+                    });
+        });
     }
 
     /**
-     * Validación de contraseña con mensajes específicos
+     * Valida todos los campos del formulario replicando la lógica de los validators de Angular.
+     * Marca con error los campos inválidos directamente en el TextInputLayout correspondiente.
+     *
+     * @return true si el formulario es válido, false en caso contrario
      */
-    private boolean validarPasswordConMensaje(String password) {
+    private boolean validarFormulario(String nombre, String apellidos, String email,
+                                      String password, String confirmPassword,
+                                      String dni, String direccion) {
+        boolean valido = true;
+
+        /*Validación de nombre: campo obligatorio*/
+        if (nombre.isEmpty()) {
+            tilNombre.setError("El nombre es obligatorio");
+            valido = false;
+        }
+
+        /*Validación de apellidos: campo obligatorio*/
+        if (apellidos.isEmpty()) {
+            tilApellidos.setError("Los apellidos son obligatorios");
+            valido = false;
+        }
+
+        /*Validación de email: obligatorio y formato correcto (replica customEmailValidator)*/
+        if (email.isEmpty()) {
+            tilEmail.setError("El correo electrónico es obligatorio");
+            valido = false;
+        } else if (!validarEmail(email)) {
+            tilEmail.setError("El formato del correo electrónico no es válido");
+            valido = false;
+        }
+
+        /*Validación de contraseña: obligatoria y con requisitos (replica customPasswordValidator)*/
+        if (password.isEmpty()) {
+            tilPassword.setError("La contraseña es obligatoria");
+            valido = false;
+        } else {
+            String errorPassword = validarPassword(password);
+            if (errorPassword != null) {
+                tilPassword.setError(errorPassword);
+                valido = false;
+            }
+        }
+
+        /*Validación de confirmación de contraseña: obligatoria y debe coincidir (replica passwordsMatchValidator)*/
+        if (confirmPassword.isEmpty()) {
+            tilConfirmPassword.setError("Debes confirmar la contraseña");
+            valido = false;
+        } else if (!password.equals(confirmPassword)) {
+            tilConfirmPassword.setError("Las contraseñas no coinciden");
+            valido = false;
+        }
+
+        /*Validación de DNI: obligatorio y formato español válido (replica customDniValidator)*/
+        if (dni.isEmpty()) {
+            tilDni.setError("El DNI es obligatorio");
+            valido = false;
+        } else if (!validarDni(dni)) {
+            tilDni.setError("El formato del DNI no es válido (ej: 12345678A)");
+            valido = false;
+        }
+
+        /*Validación de dirección: campo obligatorio*/
+        if (direccion.isEmpty()) {
+            tilDireccion.setError("La dirección es obligatoria");
+            valido = false;
+        }
+
+        return valido;
+    }
+
+    /**
+     * Valida el formato del email mediante expresión regular.
+     * Replica el comportamiento del customEmailValidator de Angular.
+     *
+     * @param email Email a validar
+     * @return true si el formato es válido
+     */
+    private boolean validarEmail(String email) {
+        return android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches();
+    }
+
+    /**
+     * Valida que la contraseña cumpla todos los requisitos de seguridad.
+     * Replica el comportamiento del customPasswordValidator de Angular:
+     * mínimo 9 caracteres, 1 mayúscula, 1 minúscula, 1 número y 1 carácter especial.
+     *
+     * @param password Contraseña a validar
+     * @return null si es válida, o un String con el mensaje de error
+     */
+    private String validarPassword(String password) {
 
         StringBuilder errores = new StringBuilder();
 
         if (password.length() < 9) {
-            errores.append(" 9 caracteres, ");
+            errores.append("mínimo 9 caracteres, ");
         }
-
         if (!password.matches(".*[A-Z].*")) {
-            errores.append(" 1 mayúscula, ");
+            errores.append("1 mayúscula, ");
         }
-
         if (!password.matches(".*[a-z].*")) {
-            errores.append(" 1 minúscula, ");
+            errores.append("1 minúscula, ");
         }
-
         if (!password.matches(".*\\d.*")) {
-            errores.append(" 1 número, ");
+            errores.append("1 número, ");
         }
-
         if (!password.matches(".*[^A-Za-z\\d].*")) {
-            errores.append(" 1 carácter especial, ");
+            errores.append("1 carácter especial, ");
         }
 
         if (errores.length() > 0) {
-
             String mensaje = errores.toString();
-            mensaje = mensaje.substring(0, mensaje.length() - 2);
-
-            Snackbar.make(findViewById(android.R.id.content),
-                    "La contraseña no cumple los requisitos: " + mensaje,
-                    Snackbar.LENGTH_LONG).show();
-
-            return false;
+            return "La contraseña necesita: " + mensaje.substring(0, mensaje.length() - 2);
         }
 
-        return true;
+        return null;
     }
 
-    private void registrarCliente(String uid, String nombre, String apellidos, String email, String password) {
+    /**
+     * Valida el formato del DNI español: 8 dígitos seguidos de una letra mayúscula.
+     * Replica el comportamiento del customDniValidator de Angular.
+     *
+     * @param dni DNI a validar
+     * @return true si el formato es válido
+     */
+    private boolean validarDni(String dni) {
+        return dni.matches("^\\d{8}[A-Z]$");
+    }
 
-        String dni = etDni.getText().toString().trim();
-        String direccion = etDireccion.getText().toString().trim();
+    /**
+     * Gestiona los errores específicos devueltos por Firebase Auth
+     * replicando el bloque error del subscribe de Angular.
+     */
+    private void gestionarErrorFirebase(Exception exception) {
 
-        if (dni.isEmpty() || direccion.isEmpty()) {
-            Snackbar.make(findViewById(android.R.id.content),
-                    "Por favor, rellena todos los campos del Cliente para continuar",
-                    Snackbar.LENGTH_LONG).show();
-            return;
+        String mensaje = "Error al registrar el usuario. Inténtalo de nuevo";
+
+        if (exception != null) {
+            String errorCode = exception.getMessage();
+            if (errorCode != null && errorCode.contains("email-already-in-use")) {
+                tilEmail.setError("El correo electrónico ya está registrado");
+                mensaje = "El correo electrónico ya está registrado";
+            } else if (errorCode != null && errorCode.contains("invalid-email")) {
+                tilEmail.setError("El correo electrónico no es válido");
+                mensaje = "El correo electrónico no es válido";
+            }
         }
 
-        Cliente cliente = new Cliente();
-        cliente.setId(uid);
-        cliente.setNombre(nombre);
-        cliente.setApellidos(apellidos);
-        cliente.setEmail(email);
-        cliente.setPassword(password);
-        cliente.setRol(Rol.CLIENTE);
-        cliente.setFoto("");
-        cliente.setDni(dni);
-        cliente.setDireccion(direccion);
-        cliente.setFecha_alta(System.currentTimeMillis());
-        cliente.setIs_active(true);
-
-        clienteService.insertCliente(cliente);
-        onRegistroExitoso();
+        showCenteredSnackbar(mensaje);
     }
 
-    private void registrarProfesional(String uid, String nombre, String apellidos, String email, String password) {
-
-        String descripcion = etDescripcion.getText().toString().trim();
-        String annosStr = etAnnosExperiencia.getText().toString().trim();
-        Especialidad especialidad = (Especialidad) spinnerEspecialidad.getSelectedItem();
-
-        if (descripcion.isEmpty() || annosStr.isEmpty()) {
-            Snackbar.make(findViewById(android.R.id.content),
-                    "Por favor, rellena todos los campos del Profesional para continuar",
-                    Snackbar.LENGTH_LONG).show();
-            return;
-        }
-
-        Profesional profesional = new Profesional();
-        profesional.setId(uid);
-        profesional.setNombre(nombre);
-        profesional.setApellidos(apellidos);
-        profesional.setEmail(email);
-        profesional.setPassword(password);
-        profesional.setRol(Rol.PROFESIONAL);
-        profesional.setFoto("");
-        profesional.setDescripcion(descripcion);
-        profesional.setAnnos_experiencia(Integer.parseInt(annosStr));
-        profesional.setEspecialidad(especialidad);
-
-        profesionalService.insertProfesional(profesional);
-        onRegistroExitoso();
+    /**
+     * Limpia los errores de todos los TextInputLayout del formulario
+     */
+    private void limpiarErrores() {
+        tilNombre.setError(null);
+        tilApellidos.setError(null);
+        tilEmail.setError(null);
+        tilPassword.setError(null);
+        tilConfirmPassword.setError(null);
+        tilDni.setError(null);
+        tilDireccion.setError(null);
     }
 
-    private void registrarAdministrador(String uid, String nombre, String apellidos, String email, String password) {
-
-        Administrador administrador = new Administrador();
-        administrador.setId(uid);
-        administrador.setNombre(nombre);
-        administrador.setApellidos(apellidos);
-        administrador.setEmail(email);
-        administrador.setPassword(password);
-        administrador.setRol(Rol.ADMINISTRADOR);
-        administrador.setFoto("");
-
-        administradorService.insertAdministrador(administrador);
-        onRegistroExitoso();
+    /**
+     * Restaura el estado del botón y la variable isLoading tras un error
+     */
+    private void resetLoading() {
+        isLoading = false;
+        btnRegister.setEnabled(true);
     }
 
+    /**
+     * Navega a la pantalla de Login y cierra esta Activity
+     */
+    private void navigateToLogin() {
+        startActivity(new Intent(SignUpActivity.this, LoginActivity.class));
+        finish();
+    }
+
+    /**
+     * Callback ejecutado tras un registro exitoso: muestra confirmación y navega al Home
+     */
     private void onRegistroExitoso() {
-        Snackbar.make(findViewById(android.R.id.content),
-                "¡Cuenta creada con éxito! Bienvenido a Sportiva Booking",
-                Snackbar.LENGTH_LONG).show();
-        Intent intent = new Intent(SignUpActivity.this, MainActivity.class);
-        startActivity(intent);
+        showCenteredSnackbar("¡Cuenta de Cliente creada con éxito! Bienvenido");
+        startActivity(new Intent(SignUpActivity.this, MainActivity.class));
         finish();
     }
 }
