@@ -13,13 +13,16 @@
         android:theme="@style/Theme.SportivaBookingAndroid"
         tools:targetApi="31">
         <activity
+            android:name=".v2.activities.LoginActivity"
+            android:exported="false" />
+        <activity
             android:name=".v2.activities.ResetPassword"
             android:exported="false" />
         <activity
             android:name=".v2.activities.SignUpActivity"
             android:exported="false" />
         <activity
-            android:name=".v2.activities.LoginActivity"
+            android:name=".v2.activities.WelcomeActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
