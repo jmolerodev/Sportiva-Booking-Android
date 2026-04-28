@@ -21,6 +21,7 @@ import androidx.drawerlayout.widget.DrawerLayout;
 
 import com.example.sportiva_booking_android.R;
 import com.example.sportiva_booking_android.v2.enums.Rol;
+import com.example.sportiva_booking_android.v2.fragments.HomeFragment;
 import com.google.android.material.navigation.NavigationView;
 import com.google.android.material.snackbar.Snackbar;
 import com.google.firebase.auth.FirebaseAuth;
@@ -78,6 +79,14 @@ public class MainActivity extends AppCompatActivity {
 
         /*Mostramos únicamente las opciones del menú que corresponden al rol del usuario*/
         setupMenuPorRol();
+
+        if (savedInstanceState == null) {
+            HomeFragment homeFragment = HomeFragment.newInstance(userRol);
+
+            getSupportFragmentManager().beginTransaction()
+                    .replace(R.id.fragment_container, homeFragment)
+                    .commit();
+        }
     }
 
     /**
