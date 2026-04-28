@@ -5,4 +5,5 @@
     <color name="background">#12C981</color>
     <color name="text">#FF000000</color>
     <color name="radio_button">#FF000000</color>
+    <color name="red">#D50707</color>
 </resources>

@@ -52,7 +52,7 @@
                 android:layout_gravity="center_horizontal"
                 android:layout_marginBottom="24dp"
                 android:text="¡Bienvenido de Nuevo!"
-                android:textColor="@color/text"
+                android:textColor="@color/black"
                 android:textSize="22sp"
                 android:textStyle="bold" />
 
@@ -63,7 +63,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="6dp"
                 android:text="Correo Electrónico"
-                android:textColor="@color/text"
+                android:textColor="@color/black"
                 android:textSize="14sp"
                 android:textStyle="bold" />
 
@@ -86,6 +86,8 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:hint="Introduce tu correo"
+                    android:textColorHint="@color/black"
+                    android:textAlignment="center"
                     android:inputType="textEmailAddress"
                     android:padding="14dp"
                     android:textSize="14sp" />
@@ -99,7 +101,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="6dp"
                 android:text="Contraseña"
-                android:textColor="@color/text"
+                android:textColor="@color/black"
                 android:textSize="14sp"
                 android:textStyle="bold" />
 
@@ -124,6 +126,8 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:hint="Introduce tu contraseña"
+                    android:textColorHint="@color/black"
+                    android:textAlignment="center"
                     android:inputType="textPassword"
                     android:padding="14dp"
                     android:textSize="14sp" />
@@ -137,7 +141,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="24dp"
                 android:text="Recordar usuario"
-                android:textColor="@color/text"
+                android:textColor="@color/black"
                 android:textSize="14sp"
                 android:textStyle="bold" />
 

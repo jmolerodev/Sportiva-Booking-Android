@@ -1,9 +1,9 @@
 {
   "project_info": {
     "project_number": "969230804739",
+    "firebase_url": "https://sportivabooking-default-rtdb.europe-west1.firebasedatabase.app",
     "project_id": "sportivabooking",
-    "storage_bucket": "sportivabooking.firebasestorage.app",
-    "firebase_url": "https://sportivabooking-default-rtdb.europe-west1.firebasedatabase.app"
+    "storage_bucket": "sportivabooking.firebasestorage.app"
   },
   "client": [
     {
