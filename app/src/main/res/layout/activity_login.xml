@@ -11,7 +11,7 @@
     android:padding="24dp"
     tools:context=".v2.activities.LoginActivity">
 
-    ```
+
     <ImageView
         android:id="@+id/imageView"
         android:layout_width="160dp"
@@ -198,6 +198,6 @@
             android:textStyle="bold" />
 
     </LinearLayout>
-    ```
+
 
 </androidx.constraintlayout.widget.ConstraintLayout>

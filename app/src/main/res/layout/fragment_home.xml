@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ScrollView
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/background">
@@ -11,13 +12,21 @@
         android:orientation="vertical"
         android:padding="24dp">
 
-        <!-- SPINNER DE CARGA GLOBAL -->
+        <ImageView
+            android:id="@+id/imageViewLogo"
+            android:layout_width="160dp"
+            android:layout_height="160dp"
+            android:layout_gravity="center"
+            android:layout_marginBottom="24dp"
+            android:scaleType="fitCenter"
+            android:src="@drawable/logo_app" />
+
         <LinearLayout
             android:id="@+id/layoutLoading"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical"
             android:gravity="center"
+            android:orientation="vertical"
             android:padding="48dp"
             android:visibility="visible">
 
@@ -32,12 +41,11 @@
                 android:layout_marginTop="16dp"
                 android:text="Cargando tu espacio deportivo..."
                 android:textColor="@color/white"
-                android:textStyle="bold"
-                android:textSize="16sp" />
+                android:textSize="16sp"
+                android:textStyle="bold" />
 
         </LinearLayout>
 
-        <!-- CONTENIDO PRINCIPAL (se muestra al terminar la carga) -->
         <LinearLayout
             android:id="@+id/layoutContent"
             android:layout_width="match_parent"
@@ -45,7 +53,6 @@
             android:orientation="vertical"
             android:visibility="gone">
 
-            <!-- ====== SECCIÓN ROOT ====== -->
             <LinearLayout
                 android:id="@+id/sectionRoot"
                 android:layout_width="match_parent"
@@ -56,41 +63,40 @@
                 <androidx.cardview.widget.CardView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    app:cardCornerRadius="20dp"
-                    app:cardElevation="8dp"
                     app:cardBackgroundColor="@color/white"
-                    xmlns:app="http://schemas.android.com/apk/res-auto">
+                    app:cardCornerRadius="20dp"
+                    app:cardElevation="8dp">
 
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:orientation="vertical"
                         android:gravity="center"
+                        android:orientation="vertical"
                         android:padding="32dp">
 
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
+                            android:layout_marginBottom="16dp"
                             android:text="🔒"
-                            android:textSize="48sp"
-                            android:layout_marginBottom="16dp" />
+                            android:textSize="48sp" />
 
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
+                            android:layout_marginBottom="8dp"
                             android:text="Cuenta Principal"
                             android:textColor="@color/black"
-                            android:textStyle="bold"
                             android:textSize="18sp"
-                            android:layout_marginBottom="8dp" />
+                            android:textStyle="bold" />
 
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
+                            android:gravity="center"
                             android:text="Estás conectado como cuenta raíz de la plataforma. Desde aquí puedes supervisar el funcionamiento global de Sportiva Booking."
                             android:textColor="@color/black"
-                            android:textSize="14sp"
-                            android:gravity="center" />
+                            android:textSize="14sp" />
 
                     </LinearLayout>
 
@@ -98,16 +104,13 @@
 
             </LinearLayout>
 
-            <!-- ====== SECCIÓN ADMINISTRADOR ====== -->
             <LinearLayout
                 android:id="@+id/sectionAdmin"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:visibility="gone"
-                xmlns:app="http://schemas.android.com/apk/res-auto">
+                android:visibility="gone">
 
-                <!-- Card con datos del centro (cuando existe) -->
                 <LinearLayout
                     android:id="@+id/cardCentroAdmin"
                     android:layout_width="match_parent"
@@ -118,9 +121,9 @@
                     <androidx.cardview.widget.CardView
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
+                        app:cardBackgroundColor="@color/white"
                         app:cardCornerRadius="20dp"
-                        app:cardElevation="8dp"
-                        app:cardBackgroundColor="@color/white">
+                        app:cardElevation="8dp">
 
                         <LinearLayout
                             android:layout_width="match_parent"
@@ -131,38 +134,38 @@
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
+                                android:layout_marginBottom="8dp"
                                 android:text="Tu Centro Deportivo"
-                                android:textColor="@color/background"
-                                android:textStyle="bold"
-                                android:textSize="12sp"
                                 android:textAllCaps="true"
-                                android:layout_marginBottom="8dp" />
+                                android:textColor="@color/background"
+                                android:textSize="12sp"
+                                android:textStyle="bold" />
 
                             <TextView
                                 android:id="@+id/tvNombreAdmin"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
+                                android:layout_marginBottom="16dp"
                                 android:textColor="@color/black"
-                                android:textStyle="bold"
                                 android:textSize="22sp"
-                                android:layout_marginBottom="16dp" />
+                                android:textStyle="bold" />
 
                             <TextView
                                 android:id="@+id/tvDireccionAdmin"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:textColor="@color/black"
-                                android:textSize="14sp"
+                                android:layout_marginBottom="8dp"
                                 android:drawablePadding="8dp"
-                                android:layout_marginBottom="8dp" />
+                                android:textColor="@color/black"
+                                android:textSize="14sp" />
 
                             <TextView
                                 android:id="@+id/tvTelefonoAdmin"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
+                                android:drawablePadding="8dp"
                                 android:textColor="@color/black"
-                                android:textSize="14sp"
-                                android:drawablePadding="8dp" />
+                                android:textSize="14sp" />
 
                         </LinearLayout>
 
@@ -170,7 +173,6 @@
 
                 </LinearLayout>
 
-                <!-- Div informativo cuando el admin no tiene centro creado -->
                 <LinearLayout
                     android:id="@+id/divSinCentroAdmin"
                     android:layout_width="match_parent"
@@ -181,52 +183,52 @@
                     <androidx.cardview.widget.CardView
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
+                        app:cardBackgroundColor="@color/white"
                         app:cardCornerRadius="20dp"
-                        app:cardElevation="8dp"
-                        app:cardBackgroundColor="@color/white">
+                        app:cardElevation="8dp">
 
                         <LinearLayout
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:orientation="vertical"
                             android:gravity="center"
+                            android:orientation="vertical"
                             android:padding="32dp">
 
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
+                                android:layout_marginBottom="16dp"
                                 android:text="🏗️"
-                                android:textSize="48sp"
-                                android:layout_marginBottom="16dp" />
+                                android:textSize="48sp" />
 
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
+                                android:layout_marginBottom="8dp"
+                                android:gravity="center"
                                 android:text="Tu espacio deportivo te espera"
                                 android:textColor="@color/black"
-                                android:textStyle="bold"
                                 android:textSize="18sp"
-                                android:gravity="center"
-                                android:layout_marginBottom="8dp" />
+                                android:textStyle="bold" />
 
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
+                                android:layout_marginBottom="24dp"
+                                android:gravity="center"
                                 android:text="Aún no has configurado tu centro deportivo. Comienza a gestionar tus clientes y profesionales hoy mismo."
                                 android:textColor="@color/black"
-                                android:textSize="14sp"
-                                android:gravity="center"
-                                android:layout_marginBottom="24dp" />
+                                android:textSize="14sp" />
 
                             <Button
                                 android:id="@+id/btnCrearCentro"
                                 android:layout_width="match_parent"
                                 android:layout_height="52dp"
+                                android:backgroundTint="@color/background"
                                 android:text="Registrar mi Centro"
                                 android:textColor="@color/white"
-                                android:textStyle="bold"
                                 android:textSize="14sp"
-                                android:backgroundTint="@color/background"
+                                android:textStyle="bold"
                                 app:cornerRadius="12dp" />
 
                         </LinearLayout>
@@ -237,16 +239,13 @@
 
             </LinearLayout>
 
-            <!-- ====== SECCIÓN PROFESIONAL ====== -->
             <LinearLayout
                 android:id="@+id/sectionPro"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:visibility="gone"
-                xmlns:app="http://schemas.android.com/apk/res-auto">
+                android:visibility="gone">
 
-                <!-- Card con datos del centro (cuando tiene centro asignado) -->
                 <LinearLayout
                     android:id="@+id/cardCentroPro"
                     android:layout_width="match_parent"
@@ -257,9 +256,9 @@
                     <androidx.cardview.widget.CardView
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
+                        app:cardBackgroundColor="@color/white"
                         app:cardCornerRadius="20dp"
-                        app:cardElevation="8dp"
-                        app:cardBackgroundColor="@color/white">
+                        app:cardElevation="8dp">
 
                         <LinearLayout
                             android:layout_width="match_parent"
@@ -270,29 +269,29 @@
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
+                                android:layout_marginBottom="8dp"
                                 android:text="Tu Centro de Trabajo"
-                                android:textColor="@color/background"
-                                android:textStyle="bold"
-                                android:textSize="12sp"
                                 android:textAllCaps="true"
-                                android:layout_marginBottom="8dp" />
+                                android:textColor="@color/background"
+                                android:textSize="12sp"
+                                android:textStyle="bold" />
 
                             <TextView
                                 android:id="@+id/tvNombrePro"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
+                                android:layout_marginBottom="16dp"
                                 android:textColor="@color/black"
-                                android:textStyle="bold"
                                 android:textSize="22sp"
-                                android:layout_marginBottom="16dp" />
+                                android:textStyle="bold" />
 
                             <TextView
                                 android:id="@+id/tvDireccionPro"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
+                                android:layout_marginBottom="8dp"
                                 android:textColor="@color/black"
-                                android:textSize="14sp"
-                                android:layout_marginBottom="8dp" />
+                                android:textSize="14sp" />
 
                             <TextView
                                 android:id="@+id/tvTelefonoPro"
@@ -305,8 +304,8 @@
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
                                 android:layout_marginTop="16dp"
-                                app:cardCornerRadius="12dp"
-                                app:cardBackgroundColor="@color/background">
+                                app:cardBackgroundColor="@color/background"
+                                app:cardCornerRadius="12dp">
 
                                 <TextView
                                     android:layout_width="wrap_content"
@@ -315,8 +314,8 @@
                                     android:padding="12dp"
                                     android:text="Panel de Profesional Activo"
                                     android:textColor="@color/white"
-                                    android:textStyle="bold"
-                                    android:textSize="13sp" />
+                                    android:textSize="13sp"
+                                    android:textStyle="bold" />
 
                             </androidx.cardview.widget.CardView>
 
@@ -326,7 +325,6 @@
 
                 </LinearLayout>
 
-                <!-- Div informativo cuando el pro no tiene centro asignado -->
                 <LinearLayout
                     android:id="@+id/divSinCentroPro"
                     android:layout_width="match_parent"
@@ -337,40 +335,40 @@
                     <androidx.cardview.widget.CardView
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
+                        app:cardBackgroundColor="@color/white"
                         app:cardCornerRadius="20dp"
-                        app:cardElevation="8dp"
-                        app:cardBackgroundColor="@color/white">
+                        app:cardElevation="8dp">
 
                         <LinearLayout
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:orientation="vertical"
                             android:gravity="center"
+                            android:orientation="vertical"
                             android:padding="32dp">
 
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
+                                android:layout_marginBottom="16dp"
                                 android:text="⏳"
-                                android:textSize="48sp"
-                                android:layout_marginBottom="16dp" />
+                                android:textSize="48sp" />
 
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
+                                android:layout_marginBottom="8dp"
                                 android:text="Vinculación pendiente"
                                 android:textColor="@color/black"
-                                android:textStyle="bold"
                                 android:textSize="18sp"
-                                android:layout_marginBottom="8dp" />
+                                android:textStyle="bold" />
 
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
+                                android:gravity="center"
                                 android:text="Tu cuenta de profesional aún no ha sido vinculada a ningún centro deportivo. Contacta con tu administrador."
                                 android:textColor="@color/black"
-                                android:textSize="14sp"
-                                android:gravity="center" />
+                                android:textSize="14sp" />
 
                         </LinearLayout>
 
@@ -380,16 +378,13 @@
 
             </LinearLayout>
 
-            <!-- ====== SECCIÓN CLIENTE ====== -->
             <LinearLayout
                 android:id="@+id/sectionCliente"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:visibility="gone"
-                xmlns:app="http://schemas.android.com/apk/res-auto">
+                android:visibility="gone">
 
-                <!-- Div informativo si no hay ningún centro en la plataforma -->
                 <LinearLayout
                     android:id="@+id/divSinCentrosCliente"
                     android:layout_width="match_parent"
@@ -400,40 +395,40 @@
                     <androidx.cardview.widget.CardView
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
+                        app:cardBackgroundColor="@color/white"
                         app:cardCornerRadius="20dp"
-                        app:cardElevation="8dp"
-                        app:cardBackgroundColor="@color/white">
+                        app:cardElevation="8dp">
 
                         <LinearLayout
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:orientation="vertical"
                             android:gravity="center"
+                            android:orientation="vertical"
                             android:padding="32dp">
 
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
+                                android:layout_marginBottom="16dp"
                                 android:text="😊"
-                                android:textSize="48sp"
-                                android:layout_marginBottom="16dp" />
+                                android:textSize="48sp" />
 
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
+                                android:layout_marginBottom="8dp"
                                 android:text="Próximamente nuevos centros"
                                 android:textColor="@color/black"
-                                android:textStyle="bold"
                                 android:textSize="18sp"
-                                android:layout_marginBottom="8dp" />
+                                android:textStyle="bold" />
 
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
+                                android:gravity="center"
                                 android:text="Estamos trabajando para incorporar los mejores centros deportivos de tu zona. ¡Vuelve pronto!"
                                 android:textColor="@color/black"
-                                android:textSize="14sp"
-                                android:gravity="center" />
+                                android:textSize="14sp" />
 
                         </LinearLayout>
 
@@ -441,16 +436,15 @@
 
                 </LinearLayout>
 
-                <!-- Banner informativo si no tiene membresía en ningún centro -->
                 <LinearLayout
                     android:id="@+id/bannerSinMembresia"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:background="@color/white"
-                    android:padding="16dp"
                     android:layout_marginBottom="16dp"
+                    android:background="@color/white"
                     android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:padding="16dp"
                     android:visibility="gone">
 
                     <TextView
@@ -462,7 +456,6 @@
 
                 </LinearLayout>
 
-                <!-- Lista: centros con membresía activa -->
                 <LinearLayout
                     android:id="@+id/sectionConMembresia"
                     android:layout_width="match_parent"
@@ -473,19 +466,19 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
+                        android:layout_marginBottom="4dp"
                         android:text="✅  Mis Centros"
                         android:textColor="@color/white"
-                        android:textStyle="bold"
                         android:textSize="18sp"
-                        android:layout_marginBottom="4dp" />
+                        android:textStyle="bold" />
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
+                        android:layout_marginBottom="16dp"
                         android:text="Centros donde tienes membresía activa"
                         android:textColor="@color/white"
-                        android:textSize="13sp"
-                        android:layout_marginBottom="16dp" />
+                        android:textSize="13sp" />
 
                     <LinearLayout
                         android:id="@+id/listConMembresia"
@@ -495,31 +488,30 @@
 
                 </LinearLayout>
 
-                <!-- Lista: centros sin membresía -->
                 <LinearLayout
                     android:id="@+id/sectionSinMembresia"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="vertical"
                     android:layout_marginTop="24dp"
+                    android:orientation="vertical"
                     android:visibility="gone">
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
+                        android:layout_marginBottom="4dp"
                         android:text="🧭  Descubre más Centros"
                         android:textColor="@color/white"
-                        android:textStyle="bold"
                         android:textSize="18sp"
-                        android:layout_marginBottom="4dp" />
+                        android:textStyle="bold" />
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
+                        android:layout_marginBottom="16dp"
                         android:text="Consigue una membresía para acceder a sus sesiones"
                         android:textColor="@color/white"
-                        android:textSize="13sp"
-                        android:layout_marginBottom="16dp" />
+                        android:textSize="13sp" />
 
                     <LinearLayout
                         android:id="@+id/listSinMembresia"
