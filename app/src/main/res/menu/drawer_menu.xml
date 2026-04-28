@@ -17,7 +17,7 @@
     </group>
 
     <group android:id="@+id/group_root" android:visible="false">
-        <item android:id="@+id/nav_root_1" android:title="Opcion Root 1" android:icon="@android:drawable/ic_lock_lock" />
+        <item android:id="@+id/nav_root_1" android:title="Alta de Administradores" android:icon="@android:drawable/ic_lock_lock" />
         <item android:id="@+id/nav_root_2" android:title="Opcion Root 2" android:icon="@android:drawable/ic_menu_info_details" />
     </group>
 

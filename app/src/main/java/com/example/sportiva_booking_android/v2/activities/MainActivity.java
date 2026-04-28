@@ -18,10 +18,12 @@ import androidx.core.view.GravityCompat;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 import androidx.drawerlayout.widget.DrawerLayout;
+import androidx.fragment.app.Fragment;
 
 import com.example.sportiva_booking_android.R;
 import com.example.sportiva_booking_android.v2.enums.Rol;
 import com.example.sportiva_booking_android.v2.fragments.HomeFragment;
+import com.example.sportiva_booking_android.v2.fragments.UserManagementFragment;
 import com.google.android.material.navigation.NavigationView;
 import com.google.android.material.snackbar.Snackbar;
 import com.google.firebase.auth.FirebaseAuth;
@@ -81,10 +83,8 @@ public class MainActivity extends AppCompatActivity {
         setupMenuPorRol();
 
         if (savedInstanceState == null) {
-            HomeFragment homeFragment = HomeFragment.newInstance(userRol);
-
             getSupportFragmentManager().beginTransaction()
-                    .replace(R.id.fragment_container, homeFragment)
+                    .replace(R.id.fragment_container, HomeFragment.newInstance(userRol))
                     .commit();
         }
     }
@@ -94,7 +94,6 @@ public class MainActivity extends AppCompatActivity {
      * Si el extra no existe o no coincide con ningún valor conocido, se asigna CLIENTE por defecto.
      */
     private void recuperarRol() {
-
         String rolString = getIntent().getStringExtra("ROL");
 
         if (rolString != null) {
@@ -116,7 +115,6 @@ public class MainActivity extends AppCompatActivity {
      * que es común para todos.
      */
     private void setupMenuPorRol() {
-
         Menu menu = navigationView.getMenu();
 
         /*Ocultamos todos los grupos primero*/
@@ -192,9 +190,20 @@ public class MainActivity extends AppCompatActivity {
             /*Cerramos el drawer al seleccionar cualquier opción*/
             drawerLayout.closeDrawer(GravityCompat.START);
 
-            /*Gestionamos el cierre de sesión*/
             if (item.getItemId() == R.id.nav_logout) {
                 cerrarSesion();
+                return true;
+            }
+
+            /*ROOT: alta de administradores*/
+            if (item.getItemId() == R.id.nav_root_1) {
+                navegarAFragment(UserManagementFragment.newInstance(userRol));
+                return true;
+            }
+
+            /*ADMIN: alta de profesionales — mismo Fragment, distinto rol*/
+            if (item.getItemId() == R.id.nav_adm_1) {
+                navegarAFragment(UserManagementFragment.newInstance(userRol));
                 return true;
             }
 
@@ -203,10 +212,23 @@ public class MainActivity extends AppCompatActivity {
     }
 
     /**
-     * Método utilitario para mostrar Snackbars centrados
+     * Sustituye el fragmento actual por el indicado y lo añade a la back stack
+     * para que el botón Atrás devuelva al HomeFragment automáticamente.
+     *
+     * @param fragment Fragment destino ya instanciado con sus argumentos
+     */
+    private void navegarAFragment(Fragment fragment) {
+        getSupportFragmentManager()
+                .beginTransaction()
+                .replace(R.id.fragment_container, fragment)
+                .addToBackStack(null)
+                .commit();
+    }
+
+    /**
+     * Método utilitario para mostrar Snackbars centrados.
      */
     private void showCenteredSnackbar(String message) {
-
         Snackbar snackbar = Snackbar.make(findViewById(android.R.id.content),
                 message,
                 Snackbar.LENGTH_LONG);
@@ -222,14 +244,11 @@ public class MainActivity extends AppCompatActivity {
         snackbar.show();
     }
 
-
-
     /**
      * Cierra la sesión del usuario en Firebase Auth, limpia la preferencia
      * de "Recordar usuario" en SharedPreferences y navega de vuelta al Login.
      */
     private void cerrarSesion() {
-
         firebaseAuth.signOut();
 
         sharedPreferences.edit()
