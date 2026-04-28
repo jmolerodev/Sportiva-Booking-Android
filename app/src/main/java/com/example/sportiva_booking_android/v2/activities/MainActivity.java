@@ -1,8 +1,14 @@
 package com.example.sportiva_booking_android.v2.activities;
 
+import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.view.Gravity;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
+import android.widget.TextView;
+
 import androidx.activity.EdgeToEdge;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
@@ -14,32 +20,125 @@ import androidx.core.view.WindowInsetsCompat;
 import androidx.drawerlayout.widget.DrawerLayout;
 
 import com.example.sportiva_booking_android.R;
+import com.example.sportiva_booking_android.v2.enums.Rol;
 import com.google.android.material.navigation.NavigationView;
+import com.google.android.material.snackbar.Snackbar;
+import com.google.firebase.auth.FirebaseAuth;
 
 public class MainActivity extends AppCompatActivity {
 
-    private DrawerLayout      drawerLayout;
-    private NavigationView    navigationView;
-    private Toolbar           toolbar;
+    /*Claves para SharedPreferences*/
+    private static final String PREFS_NAME   = "SportivaPrefs";
+    private static final String KEY_REMEMBER = "rememberUser";
+
+    /*Componentes de la vista*/
+    private DrawerLayout   drawerLayout;
+    private NavigationView navigationView;
+    private Toolbar        toolbar;
+
+    /*Rol del usuario que recibimos desde LoginActivity*/
+    private Rol userRol;
+
+    /*Instancia de Firebase Authentication*/
+    private FirebaseAuth firebaseAuth;
+
+    /*SharedPreferences para limpiar la preferencia de "Recordar usuario" al cerrar sesión*/
+    private SharedPreferences sharedPreferences;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        // Esto hace que la app use toda la pantalla (quita el morado)
+        /*Esto hace que la app use toda la pantalla*/
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_main);
 
+        /*Inicializamos Firebase Auth*/
+        firebaseAuth = FirebaseAuth.getInstance();
+
+        /*Inicializamos SharedPreferences*/
+        sharedPreferences = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
+
+        /*Inicializamos los componentes de la vista*/
         drawerLayout   = findViewById(R.id.main);
         navigationView = findViewById(R.id.nav_view);
         toolbar        = findViewById(R.id.toolbar);
 
+        /*Recuperamos el rol enviado desde LoginActivity*/
+        recuperarRol();
+
+        /*Configuramos la Toolbar como ActionBar*/
         setupToolbar();
+
+        /*Configuramos el listener del menú lateral*/
         setupNavigation();
-        setupStatusBarPadding(); // Ajuste para que el icono no se tape
-        showAllOptions();
+
+        /*Ajustamos el padding para que la Toolbar no quede tapada por la cámara/reloj*/
+        setupStatusBarPadding();
+
+        /*Mostramos únicamente las opciones del menú que corresponden al rol del usuario*/
+        setupMenuPorRol();
     }
 
+    /**
+     * Recupera el rol del usuario desde el Intent y lo convierte al enum Rol.
+     * Si el extra no existe o no coincide con ningún valor conocido, se asigna CLIENTE por defecto.
+     */
+    private void recuperarRol() {
+
+        String rolString = getIntent().getStringExtra("ROL");
+
+        if (rolString != null) {
+            try {
+                userRol = Rol.valueOf(rolString);
+            } catch (IllegalArgumentException e) {
+                /*Si el valor no coincide con ningún enum, asignamos CLIENTE por defecto*/
+                userRol = Rol.CLIENTE;
+            }
+        } else {
+            /*Si no se recibió el extra, asignamos CLIENTE por defecto*/
+            userRol = Rol.CLIENTE;
+        }
+    }
+
+    /**
+     * Configura la visibilidad de los grupos del menú lateral según el rol del usuario.
+     * Cada rol ve exclusivamente sus propias opciones más el botón de cerrar sesión,
+     * que es común para todos.
+     */
+    private void setupMenuPorRol() {
+
+        Menu menu = navigationView.getMenu();
+
+        /*Ocultamos todos los grupos primero*/
+        menu.setGroupVisible(R.id.group_cliente, false);
+        menu.setGroupVisible(R.id.group_pro,     false);
+        menu.setGroupVisible(R.id.group_admin,   false);
+        menu.setGroupVisible(R.id.group_root,    false);
+
+        /*Mostramos únicamente el grupo que corresponde al rol del usuario*/
+        switch (userRol) {
+            case CLIENTE:
+                menu.setGroupVisible(R.id.group_cliente, true);
+                break;
+            case PROFESIONAL:
+                menu.setGroupVisible(R.id.group_pro, true);
+                break;
+            case ADMINISTRADOR:
+                menu.setGroupVisible(R.id.group_admin, true);
+                break;
+            case ROOT:
+                menu.setGroupVisible(R.id.group_root, true);
+                break;
+        }
+
+        /*El grupo de cerrar sesión es visible para todos los roles*/
+        menu.setGroupVisible(R.id.group_logout, true);
+    }
+
+    /**
+     * Configura la Toolbar como ActionBar y establece el icono de menú lateral.
+     */
     private void setupToolbar() {
         setSupportActionBar(toolbar);
         if (getSupportActionBar() != null) {
@@ -61,6 +160,10 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
+    /**
+     * Gestiona los clicks sobre los items de la Toolbar.
+     * Al pulsar el icono de hamburguesa, abre el DrawerLayout.
+     */
     @Override
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
         if (item.getItemId() == android.R.id.home) {
@@ -70,18 +173,67 @@ public class MainActivity extends AppCompatActivity {
         return super.onOptionsItemSelected(item);
     }
 
+    /**
+     * Configura el listener del NavigationView para gestionar
+     * la navegación entre las opciones del menú lateral.
+     */
     private void setupNavigation() {
         navigationView.setNavigationItemSelectedListener(item -> {
+
+            /*Cerramos el drawer al seleccionar cualquier opción*/
             drawerLayout.closeDrawer(GravityCompat.START);
+
+            /*Gestionamos el cierre de sesión*/
+            if (item.getItemId() == R.id.nav_logout) {
+                cerrarSesion();
+                return true;
+            }
+
             return true;
         });
     }
 
-    private void showAllOptions() {
-        Menu menu = navigationView.getMenu();
-        menu.setGroupVisible(R.id.group_cliente, true);
-        menu.setGroupVisible(R.id.group_pro,     true);
-        menu.setGroupVisible(R.id.group_admin,   true);
-        menu.setGroupVisible(R.id.group_root,    true);
+    /**
+     * Método utilitario para mostrar Snackbars centrados
+     */
+    private void showCenteredSnackbar(String message) {
+
+        Snackbar snackbar = Snackbar.make(findViewById(android.R.id.content),
+                message,
+                Snackbar.LENGTH_LONG);
+
+        /*Centramos el texto del Snackbar*/
+        TextView textView = snackbar.getView().findViewById(
+                com.google.android.material.R.id.snackbar_text
+        );
+
+        textView.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
+        textView.setGravity(Gravity.CENTER_HORIZONTAL);
+
+        snackbar.show();
+    }
+
+
+
+    /**
+     * Cierra la sesión del usuario en Firebase Auth, limpia la preferencia
+     * de "Recordar usuario" en SharedPreferences y navega de vuelta al Login.
+     */
+    private void cerrarSesion() {
+
+        firebaseAuth.signOut();
+
+        sharedPreferences.edit()
+                .putBoolean(KEY_REMEMBER, false)
+                .apply();
+
+        showCenteredSnackbar("Has cerrado la sesión con éxito. ¡Vuelve pronto!");
+
+        /*Esperamos a que el Snackbar sea visible antes de navegar*/
+        findViewById(android.R.id.content).postDelayed(() -> {
+            Intent intent = new Intent(MainActivity.this, LoginActivity.class);
+            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+            startActivity(intent);
+        }, 1500);
     }
 }

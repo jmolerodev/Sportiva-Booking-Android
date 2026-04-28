@@ -32,7 +32,7 @@ import com.google.firebase.database.ValueEventListener;
 public class LoginActivity extends AppCompatActivity {
 
     /*Clave para SharedPreferences*/
-    private static final String PREFS_NAME   = "SportivaPrefs";
+    private static final String PREFS_NAME = "SportivaPrefs";
     private static final String KEY_REMEMBER = "rememberUser";
 
     /*Delay en ms para que el Snackbar sea visible antes de navegar*/
@@ -41,12 +41,12 @@ public class LoginActivity extends AppCompatActivity {
     /*Componentes de la vista*/
     private TextInputEditText etEmail;
     private TextInputEditText etPassword;
-    private TextInputLayout   tilEmail;
-    private TextInputLayout   tilPassword;
-    private Button            btnLogin;
-    private CheckBox          cbRemember;
-    private TextView          tvForgotPassword;
-    private TextView          tvGoToSignUp;
+    private TextInputLayout tilEmail;
+    private TextInputLayout tilPassword;
+    private Button btnLogin;
+    private CheckBox cbRemember;
+    private TextView tvForgotPassword;
+    private TextView tvGoToSignUp;
 
     /*Variables donde guardaremos los datos introducidos por el usuario*/
     private String userEmail;
@@ -74,14 +74,14 @@ public class LoginActivity extends AppCompatActivity {
         checkRememberedSession();
 
         /*Inicializamos los componentes de la vista*/
-        etEmail          = findViewById(R.id.etEmailLogin);
-        etPassword       = findViewById(R.id.etPasswordLogin);
-        tilEmail         = findViewById(R.id.tilEmailLogin);
-        tilPassword      = findViewById(R.id.tilPasswordLogin);
-        btnLogin         = findViewById(R.id.btnLogin);
-        cbRemember       = findViewById(R.id.cbRememberLogin);
+        etEmail = findViewById(R.id.etEmailLogin);
+        etPassword = findViewById(R.id.etPasswordLogin);
+        tilEmail = findViewById(R.id.tilEmailLogin);
+        tilPassword = findViewById(R.id.tilPasswordLogin);
+        btnLogin = findViewById(R.id.btnLogin);
+        cbRemember = findViewById(R.id.cbRememberLogin);
         tvForgotPassword = findViewById(R.id.tvForgotPasswordLogin);
-        tvGoToSignUp     = findViewById(R.id.tvRegisterLogin);
+        tvGoToSignUp = findViewById(R.id.tvRegisterLogin);
 
         /*Listeners*/
         btnLogin.setOnClickListener(v -> login());
@@ -111,11 +111,13 @@ public class LoginActivity extends AppCompatActivity {
 
     /**
      * Método utilitario para navegar con un pequeño delay,
-     * de forma que el Snackbar sea visible antes de cambiar de pantalla
+     * de forma que el Snackbar sea visible antes de cambiar de pantalla.
+     * Envía el rol del usuario como extra en el Intent.
      */
-    private void navigateToMainDelayed() {
+    private void navigateToMainDelayed(String rol) {
         new Handler(Looper.getMainLooper()).postDelayed(() -> {
             Intent intent = new Intent(LoginActivity.this, MainActivity.class);
+            intent.putExtra("ROL", rol);
             startActivity(intent);
         }, NAVIGATE_DELAY_MS);
     }
@@ -148,9 +150,12 @@ public class LoginActivity extends AppCompatActivity {
 
                         if (snapshot.exists()) {
 
+                            /*Recuperamos el rol del usuario desde Firebase*/
+                            String rol = snapshot.child("rol").getValue(String.class);
+
                             /*Mostramos mensaje de sesión recordada y navegamos con delay*/
                             showCenteredSnackbar("¡Ya tenías la sesión iniciada! Bienvenido de nuevo");
-                            navigateToMainDelayed();
+                            navigateToMainDelayed(rol);
 
                         } else {
                             showCenteredSnackbar("No se encontraron datos del usuario.");
@@ -172,7 +177,7 @@ public class LoginActivity extends AppCompatActivity {
     private void login() {
 
         /*Obtenemos los valores introducidos por el usuario*/
-        userEmail    = etEmail.getText().toString().trim();
+        userEmail = etEmail.getText().toString().trim();
         userPassword = etPassword.getText().toString().trim();
 
         /*Limpiamos los errores visuales previos antes de revalidar*/
@@ -211,9 +216,12 @@ public class LoginActivity extends AppCompatActivity {
 
                                 if (snapshot.exists()) {
 
+                                    /*Recuperamos el rol del usuario desde Firebase*/
+                                    String rol = snapshot.child("rol").getValue(String.class);
+
                                     /*Mostramos mensaje de bienvenida y navegamos con delay*/
                                     showCenteredSnackbar("¡Bienvenido a Sportiva Booking!");
-                                    navigateToMainDelayed();
+                                    navigateToMainDelayed(rol);
 
                                 } else {
                                     showCenteredSnackbar("No se encontraron datos del usuario.");
@@ -293,7 +301,7 @@ public class LoginActivity extends AppCompatActivity {
      */
     private boolean validateFields() {
 
-        boolean emailValid    = validateEmail();
+        boolean emailValid = validateEmail();
         boolean passwordValid = validatePassword();
 
         if (!emailValid || !passwordValid) {

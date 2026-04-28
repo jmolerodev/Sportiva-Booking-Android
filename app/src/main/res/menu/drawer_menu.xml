@@ -1,11 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <item
-        android:id="@+id/nav_home"
-        android:icon="@android:drawable/ic_menu_today"
-        android:title="Inicio" />
-
     <group android:id="@+id/group_cliente" android:visible="false">
         <item android:id="@+id/nav_cli_1" android:title="Opcion Cliente 1" android:icon="@android:drawable/ic_menu_agenda" />
         <item android:id="@+id/nav_cli_2" android:title="Opcion Cliente 2" android:icon="@android:drawable/ic_menu_day" />
@@ -24,6 +19,13 @@
     <group android:id="@+id/group_root" android:visible="false">
         <item android:id="@+id/nav_root_1" android:title="Opcion Root 1" android:icon="@android:drawable/ic_lock_lock" />
         <item android:id="@+id/nav_root_2" android:title="Opcion Root 2" android:icon="@android:drawable/ic_menu_info_details" />
+    </group>
+
+    <group android:id="@+id/group_logout" android:visible="false">
+        <item
+            android:id="@+id/nav_logout"
+            android:title="Cerrar sesión"
+            android:icon="@android:drawable/ic_lock_power_off" />
     </group>
 
 </menu>
