@@ -19,11 +19,13 @@ import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentManager;
 
 import com.example.sportiva_booking_android.R;
 import com.example.sportiva_booking_android.v2.enums.Rol;
 import com.example.sportiva_booking_android.v2.fragments.AdminListFragment;
 import com.example.sportiva_booking_android.v2.fragments.HomeFragment;
+import com.example.sportiva_booking_android.v2.fragments.ProfileFragment;
 import com.example.sportiva_booking_android.v2.fragments.UserManagementFragment;
 import com.google.android.material.navigation.NavigationView;
 import com.google.android.material.snackbar.Snackbar;
@@ -112,13 +114,13 @@ public class MainActivity extends AppCompatActivity {
 
     /**
      * Configura la visibilidad de los grupos del menú lateral según el rol del usuario.
-     * Cada rol ve exclusivamente sus propias opciones más el botón de cerrar sesión,
-     * que es común para todos.
+     * Cada rol ve sus propias opciones, el botón de inicio y el de cerrar sesión.
      */
     private void setupMenuPorRol() {
         Menu menu = navigationView.getMenu();
 
         /*Ocultamos todos los grupos primero*/
+        menu.setGroupVisible(R.id.group_home,    false);
         menu.setGroupVisible(R.id.group_cliente, false);
         menu.setGroupVisible(R.id.group_pro,     false);
         menu.setGroupVisible(R.id.group_admin,   false);
@@ -140,7 +142,8 @@ public class MainActivity extends AppCompatActivity {
                 break;
         }
 
-        /*El grupo de cerrar sesión es visible para todos los roles*/
+        /*Opciones comunes para todos los roles*/
+        menu.setGroupVisible(R.id.group_home,   true);
         menu.setGroupVisible(R.id.group_logout, true);
     }
 
@@ -191,8 +194,19 @@ public class MainActivity extends AppCompatActivity {
             /*Cerramos el drawer al seleccionar cualquier opción*/
             drawerLayout.closeDrawer(GravityCompat.START);
 
+            /*Opción común: Volver al Inicio (limpia el backstack)*/
+            if (item.getItemId() == R.id.nav_home) {
+                getSupportFragmentManager().popBackStack(null, FragmentManager.POP_BACK_STACK_INCLUSIVE);
+                return true;
+            }
+
             if (item.getItemId() == R.id.nav_logout) {
                 cerrarSesion();
+                return true;
+            }
+
+            if (item.getItemId() == R.id.nav_perfil){
+                navegarAFragment(ProfileFragment.newInstance(userRol));
                 return true;
             }
 

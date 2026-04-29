@@ -1,6 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
 
+    <group android:id="@+id/group_home" android:visible="false">
+        <item
+            android:id="@+id/nav_home"
+            android:title="Volver a inicio"
+            android:icon="@android:drawable/ic_menu_today" />
+    </group>
+
+    <!-- común a todos los roles — siempre visible -->
+    <group android:id="@+id/group_common" android:visible="true">
+        <item
+            android:id="@+id/nav_perfil"
+            android:title="Mi perfil"
+            android:icon="@android:drawable/ic_menu_myplaces" />
+    </group>
+
     <group android:id="@+id/group_cliente" android:visible="false">
         <item android:id="@+id/nav_cli_1" android:title="Opcion Cliente 1" android:icon="@android:drawable/ic_menu_agenda" />
         <item android:id="@+id/nav_cli_2" android:title="Opcion Cliente 2" android:icon="@android:drawable/ic_menu_day" />
