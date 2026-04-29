@@ -22,6 +22,7 @@ import androidx.fragment.app.Fragment;
 
 import com.example.sportiva_booking_android.R;
 import com.example.sportiva_booking_android.v2.enums.Rol;
+import com.example.sportiva_booking_android.v2.fragments.AdminListFragment;
 import com.example.sportiva_booking_android.v2.fragments.HomeFragment;
 import com.example.sportiva_booking_android.v2.fragments.UserManagementFragment;
 import com.google.android.material.navigation.NavigationView;
@@ -198,6 +199,12 @@ public class MainActivity extends AppCompatActivity {
             /*ROOT: alta de administradores*/
             if (item.getItemId() == R.id.nav_root_1) {
                 navegarAFragment(UserManagementFragment.newInstance(userRol));
+                return true;
+            }
+
+            /*ROOT: lista de administradores*/
+            if (item.getItemId() == R.id.nav_root_2){
+                navegarAFragment(AdminListFragment.newInstance(userRol));
                 return true;
             }
 

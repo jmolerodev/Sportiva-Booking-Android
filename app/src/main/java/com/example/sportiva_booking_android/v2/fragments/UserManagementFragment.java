@@ -481,7 +481,7 @@ public class UserManagementFragment extends Fragment {
         volverAtras();
     }
 
-    /*Vuelve al HomeFragment usando la back stack, equivalente a router.navigate(['/home']) en Angular*/
+
     private void volverAtras() {
         requireActivity().getSupportFragmentManager().popBackStack();
     }
