@@ -13,6 +13,7 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentManager;
 
 import com.example.sportiva_booking_android.R;
 import com.example.sportiva_booking_android.v2.enums.Especialidad;
@@ -105,8 +106,6 @@ public class UserManagementFragment extends Fragment {
 
     /**
      * Recupera el rol del Bundle de argumentos.
-     * Si no viene o falla el parse, asignamos ROOT como fallback ya que este
-     * Fragment solo lo usan roles de gestión.
      */
     private void recuperarRol() {
         if (getArguments() != null) {
@@ -123,10 +122,7 @@ public class UserManagementFragment extends Fragment {
     }
 
     /**
-     * Enlaza todas las vistas del layout con sus variables
-     * y carga el dropdown de especialidades.
-     *
-     * @param view Vista raíz inflada del Fragment
+     * Enlaza todas las vistas del layout con sus variables.
      */
     private void inicializarVistas(View view) {
         tvTitulo           = view.findViewById(R.id.tvTituloUM);
@@ -153,10 +149,6 @@ public class UserManagementFragment extends Fragment {
         cargarEspecialidades();
     }
 
-    /**
-     * Ajusta el título y muestra u oculta la sección profesional según el rol.
-     * ROOT crea Administradores, ADMINISTRADOR crea Profesionales.
-     */
     private void configurarSegunRol() {
         if (rolUsuarioLogueado == Rol.ROOT) {
             tvTitulo.setText("Alta de Administradores");
@@ -167,10 +159,6 @@ public class UserManagementFragment extends Fragment {
         }
     }
 
-    /**
-     * Carga los valores del enum Especialidad en el AutoCompleteTextView.
-     * Equivalente al @for (esp of especialidades) del template Angular.
-     */
     private void cargarEspecialidades() {
         Especialidad[] valores = Especialidad.values();
         String[]       nombres = new String[valores.length];
@@ -185,10 +173,6 @@ public class UserManagementFragment extends Fragment {
         actvEspecialidad.setAdapter(adapter);
     }
 
-    /**
-     * Verifica si el administrador autenticado tiene centro deportivo registrado.
-     * Bloquea el botón de confirmar hasta que se resuelva, igual que en Angular.
-     */
     private void verificarCentroDeportivo() {
         FirebaseUser user = firebaseAuth.getCurrentUser();
         if (user == null) return;
@@ -208,11 +192,6 @@ public class UserManagementFragment extends Fragment {
         });
     }
 
-    /**
-     * Método principal que gestiona el alta de un Administrador (ROOT) o un Profesional (ADMINISTRADOR).
-     * Valida el formulario, crea la cuenta en Firebase Auth y guarda los datos en /Persons.
-     * Replica la lógica del createUser() del componente Angular.
-     */
     private void crearUsuario() {
         if (isLoading) return;
 
@@ -243,8 +222,6 @@ public class UserManagementFragment extends Fragment {
         isLoading = true;
         btnConfirmar.setEnabled(false);
 
-        /*Guardamos el UID del admin antes de crear la cuenta nueva porque Firebase
-        cambia el currentUser en cuanto crea otro usuario con createUserWithEmailAndPassword*/
         String adminIdActual = firebaseAuth.getCurrentUser() != null
                 ? firebaseAuth.getCurrentUser().getUid()
                 : null;
@@ -270,14 +247,6 @@ public class UserManagementFragment extends Fragment {
                 });
     }
 
-    /**
-     * Guarda los datos del nuevo Administrador en /Persons bajo su UID.
-     * Usa setters en lugar de constructor con parámetros, siguiendo tu patrón de modelos.
-     *
-     * @param uid       UID generado por Firebase Auth
-     * @param nombre    Nombre introducido en el formulario
-     * @param apellidos Apellidos introducidos en el formulario
-     */
     private void guardarAdministrador(String uid, String nombre, String apellidos) {
         Administrador nuevoAdmin = new Administrador();
         nuevoAdmin.setNombre(nombre);
@@ -288,7 +257,7 @@ public class UserManagementFragment extends Fragment {
         personsRef.child(uid).setValue(nuevoAdmin)
                 .addOnSuccessListener(unused -> {
                     showCenteredSnackbar("Administrador registrado con éxito");
-                    finalizarYVolver();
+                    finalizarYNavegarAlHome();
                 })
                 .addOnFailureListener(e -> {
                     showCenteredSnackbar("Error al guardar los datos del administrador");
@@ -296,19 +265,6 @@ public class UserManagementFragment extends Fragment {
                 });
     }
 
-    /**
-     * Guarda los datos del nuevo Profesional en /Persons bajo su UID,
-     * vinculándolo directamente al centro del administrador que lo da de alta.
-     * Usa setters siguiendo tu patrón de modelos con herencia.
-     *
-     * @param uid         UID generado por Firebase Auth
-     * @param nombre      Nombre introducido en el formulario
-     * @param apellidos   Apellidos introducidos en el formulario
-     * @param descripcion Biografía breve del profesional
-     * @param annosExp    Años de experiencia
-     * @param especialidad Especialidad seleccionada del enum
-     * @param adminId     UID del administrador que realiza el alta
-     */
     private void guardarProfesional(String uid, String nombre, String apellidos,
                                     String descripcion, int annosExp,
                                     String especialidad, String adminId) {
@@ -324,7 +280,7 @@ public class UserManagementFragment extends Fragment {
         personsRef.child(uid).setValue(nuevoPro)
                 .addOnSuccessListener(unused -> {
                     showCenteredSnackbar("Profesional registrado y vinculado al centro con éxito");
-                    finalizarYVolver();
+                    finalizarYNavegarAlHome();
                 })
                 .addOnFailureListener(e -> {
                     showCenteredSnackbar("Error al guardar los datos del profesional");
@@ -332,12 +288,6 @@ public class UserManagementFragment extends Fragment {
                 });
     }
 
-    /**
-     * Valida los campos comunes a ambos roles: nombre, apellidos, email,
-     * contraseña y confirmación. Mismo patrón que validarFormulario() en SignUpActivity.
-     *
-     * @return true si todos los campos base son válidos
-     */
     private boolean validarFormularioBase(String nombre, String apellidos, String email,
                                           String password, String confirmPassword) {
         boolean valido = true;
@@ -382,12 +332,6 @@ public class UserManagementFragment extends Fragment {
         return valido;
     }
 
-    /**
-     * Valida los campos exclusivos del perfil profesional.
-     * Solo se llama cuando el rol es ADMINISTRADOR.
-     *
-     * @return true si descripción, años de experiencia y especialidad son válidos
-     */
     private boolean validarCamposProfesional() {
         boolean valido      = true;
         String descripcion  = etDescripcion.getText().toString().trim();
@@ -412,14 +356,6 @@ public class UserManagementFragment extends Fragment {
         return valido;
     }
 
-    /**
-     * Valida que la contraseña cumpla los requisitos de seguridad.
-     * Mínimo 9 caracteres, 1 mayúscula, 1 minúscula, 1 número y 1 carácter especial.
-     * Mismo patrón que validarPassword() en SignUpActivity.
-     *
-     * @param password Contraseña a validar
-     * @return null si es válida, o el mensaje de error en caso contrario
-     */
     private String validarPassword(String password) {
         StringBuilder errores = new StringBuilder();
 
@@ -437,10 +373,6 @@ public class UserManagementFragment extends Fragment {
         return null;
     }
 
-    /**
-     * Gestiona los errores específicos de Firebase Auth.
-     * Mismo patrón que gestionarErrorFirebase() en SignUpActivity.
-     */
     private void gestionarErrorFirebase(Exception exception) {
         String mensaje = "Error en el registro. Inténtalo de nuevo";
 
@@ -457,7 +389,6 @@ public class UserManagementFragment extends Fragment {
         showCenteredSnackbar(mensaje);
     }
 
-    /*Limpia los errores de todos los campos del formulario antes de revalidar*/
     private void limpiarErrores() {
         tilNombre.setError(null);
         tilApellidos.setError(null);
@@ -469,27 +400,39 @@ public class UserManagementFragment extends Fragment {
         tilEspecialidad.setError(null);
     }
 
-    /*Restaura el estado del botón y la variable isLoading tras un error*/
     private void resetLoading() {
         isLoading = false;
         btnConfirmar.setEnabled(true);
     }
 
-    /*Resetea el estado de carga y vuelve al Fragment anterior*/
-    private void finalizarYVolver() {
+    /**
+     * Resetea el estado de carga y navega al HomeFragment.
+     * Se usa tras un alta exitosa para asegurar que la vista principal
+     * refleje los nuevos cambios.
+     */
+    private void finalizarYNavegarAlHome() {
         isLoading = false;
-        volverAtras();
+
+
+        /*Limpiamos el backstack para que el usuario no pueda volver al formulario al darle atrás*/
+        requireActivity().getSupportFragmentManager().popBackStack(null, FragmentManager.POP_BACK_STACK_INCLUSIVE);
+
+        
+        /*reemplazamos el fragment actual por una nueva instancia del Home Fragment*/
+        requireActivity().getSupportFragmentManager()
+                .beginTransaction()
+                .replace(R.id.fragment_container, HomeFragment.newInstance(rolUsuarioLogueado))
+                .commit();
     }
 
-
+    /**
+     * Vuelve al fragment anterior en la pila.
+     * Se usa habitualmente para el botón cancelar.
+     */
     private void volverAtras() {
         requireActivity().getSupportFragmentManager().popBackStack();
     }
 
-    /**
-     * Método utilitario para mostrar Snackbars centrados.
-     * Mismo patrón que en MainActivity y SignUpActivity.
-     */
     private void showCenteredSnackbar(String message) {
         Snackbar snackbar = Snackbar.make(requireView(), message, Snackbar.LENGTH_LONG);
         TextView textView = snackbar.getView().findViewById(
