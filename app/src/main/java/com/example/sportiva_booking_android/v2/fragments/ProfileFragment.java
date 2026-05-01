@@ -22,6 +22,10 @@ import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
 import com.bumptech.glide.Glide;
+import com.bumptech.glide.load.DataSource;
+import com.bumptech.glide.load.engine.GlideException;
+import com.bumptech.glide.request.RequestListener;
+import com.bumptech.glide.request.target.Target;
 import com.example.sportiva_booking_android.R;
 import com.example.sportiva_booking_android.v2.enums.Rol;
 import com.example.sportiva_booking_android.v2.models.Administrador;
@@ -46,44 +50,61 @@ public class ProfileFragment extends Fragment {
 
     private static final String ARG_ROL = "ROL";
 
-    /* vistas */
+    /* vistas — pantalla de carga global */
+    private View              layoutCargando;
+    private TextView          tvCargandoPerfil;
+
+    /* vistas — contenido real (oculto hasta que todo esté listo) */
+    private View              layoutContenido;
+
+    /* vistas — header */
     private ProgressBar       pbLoading;
     private ImageView         ivFotoPerfil;
     private TextView          tvNombreHeader, tvEmailHeader, tvRolBadge;
+
+    /* vistas — secciones por rol */
     private LinearLayout      seccionCliente, seccionProfesional;
+
+    /* vistas — campos comunes */
     private TextInputLayout   tilNombre, tilApellidos;
-    private TextInputLayout   tilDni, tilDireccion;
-    private TextInputLayout   tilDescripcion, tilAnnosExp;
     private TextInputEditText etNombre, etApellidos;
+
+    /* vistas — campos exclusivos de cliente */
+    private TextInputLayout   tilDni, tilDireccion;
     private TextInputEditText etDni, etDireccion;
+
+    /* vistas — campos exclusivos de profesional */
+    private TextInputLayout   tilDescripcion, tilAnnosExp;
     private TextInputEditText etDescripcion, etAnnosExp;
-    private Button            btnEditar, btnGuardar, btnCancelar;
-    private Button            btnCambiarFoto, btnEliminarFoto;
+
+    /* vistas — botones de acción */
+    private Button btnEditar, btnGuardar, btnCancelar;
+    private Button btnCambiarFoto, btnEliminarFoto;
 
     /* firebase */
-    private FirebaseAuth    firebaseAuth;
-    private FirebaseStorage firebaseStorage;
+    private FirebaseAuth     firebaseAuth;
+    private FirebaseStorage  firebaseStorage;
 
     /* servicios */
-    private ClienteService      clienteService;
-    private ProfesionalService  profesionalService;
+    private ClienteService       clienteService;
+    private ProfesionalService   profesionalService;
     private AdministradorService administradorService;
 
-    /* perfil en memoria — lo casteamos al tipo correcto cuando hace falta */
-    private Object perfil            = null;
-    private String uid               = null;
-    private String emailUsuario      = null;
-    private Rol    rolUsuario        = null;
+    /* perfil en memoria — casteamos al tipo correcto cuando hace falta */
+    private Object perfil       = null;
+    private String uid          = null;
+    private String emailUsuario = null;
+    private Rol    rolUsuario   = null;
 
-    /* control de edición y carga */
-    private boolean modoEdicion      = false;
-    private boolean isLoading        = false;
+    /* control de estado */
+    private boolean modoEdicion = false;
+    private boolean isLoading   = false;
 
     /* imagen seleccionada pendiente de subir */
-    private Uri    imagenSeleccionada = null;
+    private Uri imagenSeleccionada = null;
 
     /* url de la foto actual en storage — necesaria para borrarla si cambia o se elimina */
-    private String urlFotoOriginal    = null;
+    private String urlFotoOriginal = null;
 
     /* snapshot del estado al entrar en edición — permite restaurar si el usuario cancela */
     private String fotoSnapshotUrl    = null;
@@ -93,8 +114,11 @@ public class ProfileFragment extends Fragment {
     /* launcher para el picker de imagen del sistema */
     private ActivityResultLauncher<Intent> imagePickerLauncher;
 
+
+
     /**
      * Crea una nueva instancia del fragment pasando el rol por Bundle.
+     *
      * @param rol Rol del usuario autenticado
      * @return Instancia configurada del fragment
      */
@@ -144,8 +168,10 @@ public class ProfileFragment extends Fragment {
         cargarPerfil();
     }
 
+
     /**
      * Recupera el rol del Bundle de argumentos.
+     * Si no se encuentra o el valor no es válido usa CLIENTE como fallback.
      */
     private void recuperarRol() {
         if (getArguments() != null) {
@@ -162,7 +188,7 @@ public class ProfileFragment extends Fragment {
     }
 
     /**
-     * Inicializa las instancias de Firebase que vamos a necesitar.
+     * Inicializa las instancias de Firebase necesarias para auth y storage.
      */
     private void inicializarFirebase() {
         firebaseAuth    = FirebaseAuth.getInstance();
@@ -170,7 +196,7 @@ public class ProfileFragment extends Fragment {
     }
 
     /**
-     * Instancia los servicios que gestionan cada tipo de perfil.
+     * Instancia los servicios que gestionan cada tipo de perfil en RTDB.
      */
     private void inicializarServicios() {
         clienteService       = new ClienteService(requireContext());
@@ -179,9 +205,15 @@ public class ProfileFragment extends Fragment {
     }
 
     /**
-     * Enlaza todas las vistas del layout y configura el estado inicial.
+     * Enlaza todas las vistas del layout, muestra la sección correspondiente al rol
+     * y arranca siempre en modo lectura con la pantalla de carga activa.
+     *
+     * @param view Vista raíz del fragment inflada en onCreateView
      */
     private void inicializarVistas(View view) {
+        layoutCargando     = view.findViewById(R.id.layoutCargandoProfile);
+        tvCargandoPerfil   = view.findViewById(R.id.tvCargandoPerfilProfile);
+        layoutContenido    = view.findViewById(R.id.layoutContenidoProfile);
         pbLoading          = view.findViewById(R.id.pbLoadingProfile);
         ivFotoPerfil       = view.findViewById(R.id.ivFotoProfile);
         tvNombreHeader     = view.findViewById(R.id.tvNombreHeaderProfile);
@@ -207,9 +239,13 @@ public class ProfileFragment extends Fragment {
         btnCambiarFoto     = view.findViewById(R.id.btnCambiarFotoProfile);
         btnEliminarFoto    = view.findViewById(R.id.btnEliminarFotoProfile);
 
-        /* solo mostramos la sección que corresponde al rol */
+        /* solo mostramos la sección que corresponde al rol del usuario autenticado */
         seccionCliente.setVisibility(rolUsuario == Rol.CLIENTE ? View.VISIBLE : View.GONE);
         seccionProfesional.setVisibility(rolUsuario == Rol.PROFESIONAL ? View.VISIBLE : View.GONE);
+
+        /* el contenido permanece oculto hasta que datos y foto estén listos */
+        layoutCargando.setVisibility(View.VISIBLE);
+        layoutContenido.setVisibility(View.GONE);
 
         /* arrancamos siempre en modo lectura */
         setModoEdicion(false);
@@ -222,22 +258,22 @@ public class ProfileFragment extends Fragment {
         btnEditar.setOnClickListener(v -> toggleEdicion());
         btnCancelar.setOnClickListener(v -> toggleEdicion());
         btnGuardar.setOnClickListener(v -> guardarCambios());
-        btnCambiarFoto.setOnClickListener(v -> abrirPickerImagen());
-        btnEliminarFoto.setOnClickListener(v -> eliminarFoto());
+        btnCambiarFoto.setOnClickListener(v -> abrirGaleria());
+        btnEliminarFoto.setOnClickListener(v -> confirmarEliminarFoto());
     }
 
+
+
     /**
-     * Recupera el usuario de Auth y luego sus datos de RTDB usando el servicio correspondiente al rol.
-     * Todos los perfiles viven en /Persons/:uid independientemente del rol.
+     * Recupera el usuario de Auth y a continuación sus datos de RTDB usando el servicio
+     * correspondiente al rol. Todos los perfiles viven en /Persons/:uid sin importar el rol.
      */
     private void cargarPerfil() {
         if (!isAdded()) return;
 
-        setLoading(true);
-
         if (firebaseAuth.getCurrentUser() == null) {
             showSnackbar("No hay sesión activa");
-            setLoading(false);
+            mostrarContenido();
             return;
         }
 
@@ -251,21 +287,23 @@ public class ProfileFragment extends Fragment {
 
                 if (snapshot.exists()) {
                     parsearYPintarPerfil(snapshot);
+                    /* mostrarContenido() se llama desde pintarHeader() una vez
+                       que la foto esté lista (o confirmado que no hay foto) */
                 } else {
                     showSnackbar("No se encontraron datos del perfil");
+                    mostrarContenido();
                 }
-                setLoading(false);
             }
 
             @Override
             public void onCancelled(@NonNull DatabaseError error) {
                 if (!isAdded()) return;
                 showSnackbar("Error al recuperar el perfil");
-                setLoading(false);
+                mostrarContenido();
             }
         };
 
-        /* usamos el servicio que corresponde al rol para leer el perfil */
+        /* delegamos en el servicio del rol para leer el nodo correcto de RTDB */
         if (rolUsuario == Rol.CLIENTE) {
             clienteService.getClienteById(uid, listener);
         } else if (rolUsuario == Rol.PROFESIONAL) {
@@ -276,13 +314,14 @@ public class ProfileFragment extends Fragment {
     }
 
     /**
-     * Parsea el DataSnapshot al modelo correcto según el rol y pinta las vistas.
+     * Parsea el DataSnapshot al modelo correcto según el rol activo y pinta las vistas.
+     *
      * @param snapshot DataSnapshot con los datos del perfil desde RTDB
      */
     private void parsearYPintarPerfil(@NonNull DataSnapshot snapshot) {
         if (rolUsuario == Rol.CLIENTE) {
             Cliente c = snapshot.getValue(Cliente.class);
-            if (c == null) return;
+            if (c == null) { mostrarContenido(); return; }
             c.setId(snapshot.getKey());
             perfil          = c;
             urlFotoOriginal = c.getFoto();
@@ -295,7 +334,7 @@ public class ProfileFragment extends Fragment {
 
         } else if (rolUsuario == Rol.PROFESIONAL) {
             Profesional p = snapshot.getValue(Profesional.class);
-            if (p == null) return;
+            if (p == null) { mostrarContenido(); return; }
             p.setId(snapshot.getKey());
             perfil          = p;
             urlFotoOriginal = p.getFoto();
@@ -308,7 +347,7 @@ public class ProfileFragment extends Fragment {
 
         } else {
             Administrador a = snapshot.getValue(Administrador.class);
-            if (a == null) return;
+            if (a == null) { mostrarContenido(); return; }
             a.setId(snapshot.getKey());
             perfil          = a;
             urlFotoOriginal = a.getFoto();
@@ -320,45 +359,88 @@ public class ProfileFragment extends Fragment {
     }
 
     /**
-     * Actualiza el header con nombre, email, badge de rol y foto de perfil.
+     * Actualiza el header con nombre completo, email, badge de rol y foto de perfil.
+     * Si hay URL remota espera a que Glide termine de cargar la imagen antes de llamar
+     * a mostrarContenido() — así el usuario nunca ve el placeholder.
+     * Sin foto llama a mostrarContenido() directamente.
+     *
      * @param nombre    Nombre del usuario
      * @param apellidos Apellidos del usuario
-     * @param foto      URL de la foto o vacío si no tiene
+     * @param foto      URL de la foto almacenada en Storage, o vacío si no tiene
      */
     private void pintarHeader(String nombre, String apellidos, String foto) {
-        tvNombreHeader.setText(nombre + " " + apellidos);
+        tvNombreHeader.setText(String.format("%s %s", nombre, apellidos));
         tvEmailHeader.setText(emailUsuario);
         tvRolBadge.setText(rolUsuario.name());
 
-        /* si hay foto la cargamos con glide, si no mostramos el placeholder directamente */
         if (foto != null && !foto.isEmpty()) {
             Glide.with(this)
                     .load(foto)
-                    .placeholder(R.drawable.ic_profile_placeholder)
                     .circleCrop()
+                    .listener(new RequestListener<android.graphics.drawable.Drawable>() {
+                        @Override
+                        public boolean onLoadFailed(@Nullable GlideException e,
+                                                    Object model,
+                                                    Target<android.graphics.drawable.Drawable> target,
+                                                    boolean isFirstResource) {
+                            if (!isAdded()) return false;
+                            /* si falla mostramos el placeholder y revelamos el contenido igualmente */
+                            ivFotoPerfil.setImageResource(R.drawable.ic_profile_placeholder);
+                            mostrarContenido();
+                            return true;
+                        }
+
+                        @Override
+                        public boolean onResourceReady(android.graphics.drawable.Drawable resource,
+                                                       Object model,
+                                                       Target<android.graphics.drawable.Drawable> target,
+                                                       DataSource dataSource,
+                                                       boolean isFirstResource) {
+                            if (!isAdded()) return false;
+                            /* foto lista — ya podemos revelar el contenido sin placeholder */
+                            mostrarContenido();
+                            return false;
+                        }
+                    })
                     .into(ivFotoPerfil);
         } else {
             ivFotoPerfil.setImageResource(R.drawable.ic_profile_placeholder);
+            mostrarContenido();
         }
     }
 
     /**
-     * Abre el picker de imágenes del sistema.
+     * Oculta la pantalla de carga global y revela el contenido del perfil.
+     * Solo se llama una vez que datos y foto están completamente listos.
      */
-    private void abrirPickerImagen() {
+    private void mostrarContenido() {
+        if (!isAdded()) return;
+        layoutCargando.setVisibility(View.GONE);
+        layoutContenido.setVisibility(View.VISIBLE);
+    }
+
+
+
+    /**
+     * Abre directamente la galería del dispositivo usando ACTION_PICK sobre
+     * el content URI de imágenes — evita que el sistema ofrezca la cámara como opción.
+     */
+    private void abrirGaleria() {
         Intent intent = new Intent(Intent.ACTION_PICK,
                 MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
+        intent.setType("image/*");
         imagePickerLauncher.launch(intent);
     }
 
     /**
-     * Recibe la URI seleccionada, genera la preview inmediata y guarda la imagen pendiente de subir.
+     * Recibe la URI seleccionada desde la galería, guarda la imagen pendiente de subir
+     * y muestra la preview de forma inmediata cargando la URI local con Glide.
+     *
      * @param uri URI de la imagen seleccionada por el usuario
      */
     private void onImagenSeleccionada(Uri uri) {
         imagenSeleccionada = uri;
 
-        /* preview inmediata con la uri local antes de subir nada */
         Glide.with(this)
                 .load(uri)
                 .circleCrop()
@@ -366,8 +448,38 @@ public class ProfileFragment extends Fragment {
     }
 
     /**
-     * Limpia la foto seleccionada y restaura el placeholder.
-     * El borrado real en Storage ocurre al guardar, no aquí.
+     * Muestra un Snackbar de confirmación antes de eliminar la foto.
+     * El borrado real en Storage y el reseteo visual solo ocurren si el usuario confirma.
+     */
+    private void confirmarEliminarFoto() {
+        if (getView() == null) return;
+
+        Snackbar snackbar = Snackbar.make(
+                getView(),
+                "¿Eliminar la foto de perfil? Esta acción no se puede deshacer.",
+                Snackbar.LENGTH_LONG
+        );
+
+        snackbar.setAction("ELIMINAR", v -> eliminarFoto());
+        snackbar.setActionTextColor(
+                getResources().getColor(android.R.color.holo_red_light, null)
+        );
+
+        View snackbarView = snackbar.getView();
+        TextView textView = snackbarView.findViewById(
+                com.google.android.material.R.id.snackbar_text
+        );
+        if (textView != null) {
+            textView.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
+            textView.setGravity(Gravity.CENTER_HORIZONTAL);
+        }
+
+        snackbar.show();
+    }
+
+    /**
+     * Ejecuta el borrado visual de la foto tras confirmación del usuario.
+     * El borrado real en Storage ocurre al guardar, no en este momento.
      */
     private void eliminarFoto() {
         imagenSeleccionada = null;
@@ -376,13 +488,13 @@ public class ProfileFragment extends Fragment {
     }
 
     /**
-     * Sube la imagen nueva a Storage bajo la ruta Users/uuid,
-     * borra la anterior si existía y luego delega en persistirCambios().
+     * Sube la imagen nueva a Storage bajo la ruta Users/uuid, borra la anterior si existía
+     * y delega en persistirCambios() una vez disponible la URL de descarga.
      */
     private void subirFotoYGuardar() {
         if (uid == null || imagenSeleccionada == null) return;
 
-        /* si había foto anterior la eliminamos antes de subir la nueva */
+        /* si había foto anterior la eliminamos de Storage antes de subir la nueva */
         if (urlFotoOriginal != null && !urlFotoOriginal.isEmpty()) {
             try {
                 firebaseStorage.getReferenceFromUrl(urlFotoOriginal).delete();
@@ -411,18 +523,23 @@ public class ProfileFragment extends Fragment {
     }
 
     /**
-     * Actualiza el campo foto en el modelo en memoria antes de persistir.
+     * Actualiza el campo foto en el modelo en memoria antes de persistir en RTDB.
+     *
      * @param url Nueva URL de la foto ya subida a Storage
      */
     private void actualizarFotoEnModelo(String url) {
-        if (perfil instanceof Cliente)           ((Cliente) perfil).setFoto(url);
-        else if (perfil instanceof Profesional)  ((Profesional) perfil).setFoto(url);
-        else if (perfil instanceof Administrador)((Administrador) perfil).setFoto(url);
+        if (perfil instanceof Cliente)            ((Cliente) perfil).setFoto(url);
+        else if (perfil instanceof Profesional)   ((Profesional) perfil).setFoto(url);
+        else if (perfil instanceof Administrador) ((Administrador) perfil).setFoto(url);
     }
+
+
 
     /**
      * Mapea los campos del formulario al modelo en memoria y persiste los cambios
      * delegando en el servicio correspondiente al rol activo.
+     * Los servicios usan setValue, que es fire-and-forget, por lo que cerramos
+     * el modo edición directamente sin esperar callback de escritura.
      */
     private void persistirCambios() {
         if (uid == null || perfil == null) return;
@@ -451,7 +568,6 @@ public class ProfileFragment extends Fragment {
             profesionalService.updateProfesional(p);
 
         } else {
-            /* administrador — solo campos base */
             Administrador a = (Administrador) perfil;
             a.setNombre(nombre);
             a.setApellidos(apellidos);
@@ -459,14 +575,13 @@ public class ProfileFragment extends Fragment {
             administradorService.updateAdministrador(a);
         }
 
-        /* setValue es fire-and-forget en estos servicios, así que cerramos edición directamente */
         showSnackbar("Información actualizada correctamente");
         setModoEdicion(false);
         setLoading(false);
     }
 
     /**
-     * Punto de entrada para guardar cambios desde los botones del layout.
+     * Punto de entrada público para guardar cambios desde los botones del layout.
      * Orquesta la subida de imagen si la hay, el borrado si procede,
      * y delega la escritura final en persistirCambios().
      */
@@ -475,13 +590,13 @@ public class ProfileFragment extends Fragment {
 
         setLoading(true);
 
-        /* si hay imagen nueva pendiente primero la subimos y luego persistimos */
+        /* si hay imagen nueva pendiente primero la subimos y después persistimos */
         if (imagenSeleccionada != null) {
             subirFotoYGuardar();
             return;
         }
 
-        /* si el usuario eliminó la foto la borramos de storage antes de persistir */
+        /* si el usuario eliminó la foto la borramos de Storage antes de persistir */
         if (urlFotoOriginal == null && fotoSnapshotUrl != null && !fotoSnapshotUrl.isEmpty()) {
             try {
                 firebaseStorage.getReferenceFromUrl(fotoSnapshotUrl).delete();
@@ -492,30 +607,31 @@ public class ProfileFragment extends Fragment {
         persistirCambios();
     }
 
+
+
     /**
-     * Activa o desactiva el modo edición.
-     * Al activarlo guarda un snapshot para poder restaurar si se cancela.
-     * Al cancelar descarta los cambios visuales sin tocar Storage ni RTDB.
+     * Alterna entre modo lectura y modo edición.
+     * Al activar guarda un snapshot del estado actual para poder restaurarlo si se cancela.
+     * Al cancelar descarta los cambios visuales sin tocar Storage ni RTDB
+     * e informa al usuario mediante Snackbar.
      */
     private void toggleEdicion() {
         if (!modoEdicion) {
-
-            /* entramos en edición — guardamos snapshot para poder cancelar */
+            /* guardamos snapshot para poder revertir si el usuario cancela */
             fotoSnapshotUrl   = urlFotoOriginal;
             nombreSnapshot    = etNombre.getText().toString();
             apellidosSnapshot = etApellidos.getText().toString();
             setModoEdicion(true);
 
         } else {
-
-            /* cancelamos — descartamos la imagen seleccionada y restauramos el estado previo */
+            /* descartamos la imagen pendiente y restauramos el estado previo */
             imagenSeleccionada = null;
             urlFotoOriginal    = fotoSnapshotUrl;
 
             etNombre.setText(nombreSnapshot);
             etApellidos.setText(apellidosSnapshot);
 
-            /* restauramos la foto o el placeholder según si había url guardada */
+            /* restauramos la foto o el placeholder según si había URL guardada */
             if (fotoSnapshotUrl != null && !fotoSnapshotUrl.isEmpty()) {
                 Glide.with(this)
                         .load(fotoSnapshotUrl)
@@ -526,11 +642,14 @@ public class ProfileFragment extends Fragment {
             }
 
             setModoEdicion(false);
+            showSnackbar("Edición cancelada. No se han guardado cambios.");
         }
     }
 
     /**
-     * Controla la visibilidad de los botones y el estado editable de los campos.
+     * Controla la visibilidad de botones y el estado editable de los campos
+     * según si estamos en modo edición o lectura.
+     *
      * @param edicion true para activar el modo edición, false para el modo lectura
      */
     private void setModoEdicion(boolean edicion) {
@@ -550,9 +669,13 @@ public class ProfileFragment extends Fragment {
         btnEliminarFoto.setVisibility(edicion ? View.VISIBLE : View.GONE);
     }
 
+
+
     /**
-     * Muestra u oculta el loader y bloquea la interacción durante operaciones asíncronas.
-     * @param loading true para mostrar el loader, false para ocultarlo
+     * Muestra u oculta el loader y bloquea los botones de acción durante operaciones asíncronas
+     * para evitar llamadas duplicadas mientras hay trabajo pendiente.
+     *
+     * @param loading true para mostrar el loader y bloquear interacción, false para restaurarla
      */
     private void setLoading(boolean loading) {
         isLoading = loading;
@@ -561,13 +684,22 @@ public class ProfileFragment extends Fragment {
         btnEditar.setEnabled(!loading);
     }
 
+    /**
+     * Muestra un Snackbar centrado con el mensaje recibido.
+     * Comprueba isAdded() antes de actuar para evitar crashes si el fragment ya no está adjunto.
+     *
+     * @param message Texto a mostrar en el Snackbar
+     */
     private void showSnackbar(String message) {
         if (!isAdded()) return;
         Snackbar snackbar = Snackbar.make(requireView(), message, Snackbar.LENGTH_LONG);
         TextView textView = snackbar.getView().findViewById(
-                com.google.android.material.R.id.snackbar_text);
-        textView.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
-        textView.setGravity(Gravity.CENTER_HORIZONTAL);
+                com.google.android.material.R.id.snackbar_text
+        );
+        if (textView != null) {
+            textView.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
+            textView.setGravity(Gravity.CENTER_HORIZONTAL);
+        }
         snackbar.show();
     }
 }

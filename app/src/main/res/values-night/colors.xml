@@ -6,4 +6,7 @@
     <color name="text">#FFFFFF</color>
     <color name="radio_button">#FFFFFFFF</color>
     <color name="red">#D50707</color>
+    <color name="profile_placeholder_bg">#1F1F1F</color>
+    <color name="profile_placeholder_stroke">#33FFFFFF</color>
+    <color name="profile_placeholder_icon">#CCCCCC</color>
 </resources>
