@@ -136,4 +136,31 @@ public class SportCentreService {
     public interface SportCentreListCallback {
         void onResult(java.util.List<SportCentre> centros);
     }
+
+    /**
+     * Guarda o sobreescribe un centro deportivo en Firebase usando el adminUid como clave.
+     * Replica el saveSportCentre() de Angular que usa set() con el uid del admin.
+     *
+     * @param adminUid      UID del administrador (clave del nodo en Sports-Centre)
+     * @param centro        Objeto SportCentre a persistir
+     * @param onSuccess     Callback ejecutado si la operación tiene éxito
+     * @param onFailure     Callback ejecutado si la operación falla
+     */
+    public void saveSportCentre(String adminUid, SportCentre centro,
+                                Runnable onSuccess,
+                                OnFailureCallback onFailure) {
+
+        databaseReference
+                .child(adminUid)
+                .setValue(centro)
+                .addOnSuccessListener(unused -> onSuccess.run())
+                .addOnFailureListener(e -> onFailure.onFailure(e));
+    }
+
+    /**
+     * Interfaz funcional para gestionar errores en operaciones de escritura.
+     */
+    public interface OnFailureCallback {
+        void onFailure(Exception e);
+    }
 }

@@ -5,11 +5,13 @@ import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.appcompat.app.AlertDialog;
 import androidx.fragment.app.Fragment;
 
 import com.example.sportiva_booking_android.R;
@@ -22,7 +24,9 @@ import com.google.android.material.snackbar.Snackbar;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
+import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
+import com.google.firebase.storage.FirebaseStorage;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -31,6 +35,9 @@ public class HomeFragment extends Fragment {
 
     /*Clave para pasar el rol como argumento al fragment*/
     private static final String ARG_ROL = "rol";
+
+    /*Nodo raíz de centros deportivos en RTDB*/
+    private static final String COLLECTION_CENTRES = "Sports-Centre";
 
     /*Rol del usuario autenticado*/
     private Rol userRol;
@@ -81,6 +88,11 @@ public class HomeFragment extends Fragment {
     private TextView tvNombrePro;
     private TextView tvDireccionPro;
     private TextView tvTelefonoPro;
+
+    /*Botones de acción del Admin*/
+    private Button btnCrearCentro;
+    private Button btnEditarCentro;
+    private Button btnEliminarCentro;
 
     /**
      * Método de fábrica estático para instanciar el fragment con el rol del usuario.
@@ -149,34 +161,38 @@ public class HomeFragment extends Fragment {
      * @param view Vista raíz del fragment inflada
      */
     private void bindViews(View view) {
-        layoutLoading       = view.findViewById(R.id.layoutLoading);
-        layoutContent       = view.findViewById(R.id.layoutContent);
+        layoutLoading        = view.findViewById(R.id.layoutLoading);
+        layoutContent        = view.findViewById(R.id.layoutContent);
 
-        sectionAdmin        = view.findViewById(R.id.sectionAdmin);
-        sectionPro          = view.findViewById(R.id.sectionPro);
-        sectionCliente      = view.findViewById(R.id.sectionCliente);
-        sectionRoot         = view.findViewById(R.id.sectionRoot);
+        sectionAdmin         = view.findViewById(R.id.sectionAdmin);
+        sectionPro           = view.findViewById(R.id.sectionPro);
+        sectionCliente       = view.findViewById(R.id.sectionCliente);
+        sectionRoot          = view.findViewById(R.id.sectionRoot);
 
-        cardCentroAdmin     = view.findViewById(R.id.cardCentroAdmin);
-        cardCentroPro       = view.findViewById(R.id.cardCentroPro);
+        cardCentroAdmin      = view.findViewById(R.id.cardCentroAdmin);
+        cardCentroPro        = view.findViewById(R.id.cardCentroPro);
 
-        divSinCentroAdmin   = view.findViewById(R.id.divSinCentroAdmin);
-        divSinCentroPro     = view.findViewById(R.id.divSinCentroPro);
-        divSinCentrosCliente= view.findViewById(R.id.divSinCentrosCliente);
+        divSinCentroAdmin    = view.findViewById(R.id.divSinCentroAdmin);
+        divSinCentroPro      = view.findViewById(R.id.divSinCentroPro);
+        divSinCentrosCliente = view.findViewById(R.id.divSinCentrosCliente);
 
-        sectionConMembresia = view.findViewById(R.id.sectionConMembresia);
-        sectionSinMembresia = view.findViewById(R.id.sectionSinMembresia);
-        listConMembresia    = view.findViewById(R.id.listConMembresia);
-        listSinMembresia    = view.findViewById(R.id.listSinMembresia);
-        bannerSinMembresia  = view.findViewById(R.id.bannerSinMembresia);
+        sectionConMembresia  = view.findViewById(R.id.sectionConMembresia);
+        sectionSinMembresia  = view.findViewById(R.id.sectionSinMembresia);
+        listConMembresia     = view.findViewById(R.id.listConMembresia);
+        listSinMembresia     = view.findViewById(R.id.listSinMembresia);
+        bannerSinMembresia   = view.findViewById(R.id.bannerSinMembresia);
 
-        tvNombreAdmin       = view.findViewById(R.id.tvNombreAdmin);
-        tvDireccionAdmin    = view.findViewById(R.id.tvDireccionAdmin);
-        tvTelefonoAdmin     = view.findViewById(R.id.tvTelefonoAdmin);
+        tvNombreAdmin        = view.findViewById(R.id.tvNombreAdmin);
+        tvDireccionAdmin     = view.findViewById(R.id.tvDireccionAdmin);
+        tvTelefonoAdmin      = view.findViewById(R.id.tvTelefonoAdmin);
 
-        tvNombrePro         = view.findViewById(R.id.tvNombrePro);
-        tvDireccionPro      = view.findViewById(R.id.tvDireccionPro);
-        tvTelefonoPro       = view.findViewById(R.id.tvTelefonoPro);
+        tvNombrePro          = view.findViewById(R.id.tvNombrePro);
+        tvDireccionPro       = view.findViewById(R.id.tvDireccionPro);
+        tvTelefonoPro        = view.findViewById(R.id.tvTelefonoPro);
+
+        btnCrearCentro       = view.findViewById(R.id.btnCrearCentro);
+        btnEditarCentro      = view.findViewById(R.id.btnEditarCentro);
+        btnEliminarCentro    = view.findViewById(R.id.btnEliminarCentro);
     }
 
     /**
@@ -207,16 +223,17 @@ public class HomeFragment extends Fragment {
         if (currentUid == null) return;
 
         switch (userRol) {
-            case ADMINISTRADOR: cargarDatosAdmin();     break;
-            case PROFESIONAL:   cargarDatosPro();       break;
-            case CLIENTE:       cargarDatosCliente();   break;
-            case ROOT:          mostrarSeccionRoot();   break;
+            case ADMINISTRADOR: cargarDatosAdmin();   break;
+            case PROFESIONAL:   cargarDatosPro();     break;
+            case CLIENTE:       cargarDatosCliente(); break;
+            case ROOT:          mostrarSeccionRoot(); break;
         }
     }
 
     /**
      * Carga el centro deportivo del administrador autenticado.
-     * Si existe, muestra la card con los datos. Si no, muestra el div informativo.
+     * Si existe, muestra la card con sus datos y los botones de editar y eliminar.
+     * Si no existe, muestra el div informativo con el botón de crear.
      * Replica el bloque esAdministrador del Home de Angular.
      */
     private void cargarDatosAdmin() {
@@ -231,10 +248,20 @@ public class HomeFragment extends Fragment {
                     cardCentroAdmin.setVisibility(View.VISIBLE);
                     divSinCentroAdmin.setVisibility(View.GONE);
                     rellenarDatosCentroAdmin(centro);
+
+                    /*Editar: abrimos el fragment en modo edición*/
+                    btnEditarCentro.setOnClickListener(v -> abrirAddSportCentre(true));
+
+                    /*Eliminar: mostramos confirmación antes de borrar*/
+                    btnEliminarCentro.setOnClickListener(v -> confirmarEliminacion(centro));
+
                 } else {
                     /*Sin centro: mostramos el div informativo con el botón de crear*/
                     cardCentroAdmin.setVisibility(View.GONE);
                     divSinCentroAdmin.setVisibility(View.VISIBLE);
+
+                    /*Crear: abrimos el fragment en modo creación*/
+                    btnCrearCentro.setOnClickListener(v -> abrirAddSportCentre(false));
                 }
 
                 mostrarLoading(false);
@@ -290,6 +317,7 @@ public class HomeFragment extends Fragment {
 
             /*Cargamos todos los centros para separar listas*/
             sportCentreService.getAllSportCentres(new ValueEventListener() {
+
                 @Override
                 public void onDataChange(@NonNull DataSnapshot snapshot) {
                     if (getActivity() == null) return;
@@ -324,8 +352,10 @@ public class HomeFragment extends Fragment {
                 @Override
                 public void onCancelled(@NonNull DatabaseError error) {
                     if (getActivity() != null) {
-                        mostrarLoading(false);
-                        showCenteredSnackbar("Error al recuperar los centros deportivos.");
+                        getActivity().runOnUiThread(() -> {
+                            mostrarLoading(false);
+                            showCenteredSnackbar("Error al recuperar los centros deportivos.");
+                        });
                     }
                 }
             });
@@ -445,18 +475,95 @@ public class HomeFragment extends Fragment {
         return card;
     }
 
+
+
+    /**
+     * Abre AddSportCentreFragment en modo creación o edición.
+     * Replica la navegación router.navigate(['/add-sport-centre']) de Angular.
+     * @param modoEdicion true si el admin ya tiene centro y quiere editarlo
+     */
+    private void abrirAddSportCentre(boolean modoEdicion) {
+        AddSportCentreFragment fragment = AddSportCentreFragment.newInstance(modoEdicion);
+
+        requireActivity().getSupportFragmentManager()
+                .beginTransaction()
+                .replace(R.id.fragment_container, fragment)
+                .addToBackStack(null)
+                .commit();
+    }
+
+    /**
+     * Muestra un AlertDialog de confirmación antes de eliminar el centro.
+     * Replica el snackbarService.showConfirm() de Angular.
+     * @param centro Centro deportivo que se quiere eliminar
+     */
+    private void confirmarEliminacion(SportCentre centro) {
+        if (getContext() == null) return;
+
+        new AlertDialog.Builder(getContext())
+                .setTitle("Eliminar centro")
+                .setMessage("¿Estás seguro de que quieres eliminar este centro deportivo? Esta acción no se puede deshacer.")
+                .setPositiveButton("Eliminar", (dialog, which) -> eliminarCentro(centro))
+                .setNegativeButton("Cancelar", null)
+                .show();
+    }
+
+    /**
+     * Elimina el centro de RTDB y su foto de Storage si la tiene.
+     * Replica el deleteSportCentreComplete() del servicio Angular.
+     * @param centro Centro deportivo a eliminar
+     */
+    private void eliminarCentro(SportCentre centro) {
+        mostrarLoading(true);
+
+        /*Si tiene foto la borramos de Storage antes de eliminar el nodo*/
+        if (centro.getFoto() != null && !centro.getFoto().isEmpty()) {
+            try {
+                FirebaseStorage.getInstance()
+                        .getReferenceFromUrl(centro.getFoto())
+                        .delete();
+            } catch (Exception ignored) {}
+        }
+
+        /*Borramos el nodo de RTDB usando el adminUid como clave (igual que en Angular)*/
+        FirebaseDatabase.getInstance()
+                .getReference(COLLECTION_CENTRES)
+                .child(currentUid)
+                .removeValue()
+                .addOnSuccessListener(unused -> {
+                    if (getActivity() == null) return;
+                    getActivity().runOnUiThread(() -> {
+                        mostrarLoading(false);
+                        showCenteredSnackbar("Centro eliminado correctamente");
+
+                        /*Refrescamos la sección para mostrar el div de crear*/
+                        cardCentroAdmin.setVisibility(View.GONE);
+                        divSinCentroAdmin.setVisibility(View.VISIBLE);
+                        btnCrearCentro.setOnClickListener(v -> abrirAddSportCentre(false));
+                    });
+                })
+                .addOnFailureListener(e -> {
+                    if (getActivity() == null) return;
+                    getActivity().runOnUiThread(() -> {
+                        mostrarLoading(false);
+                        showCenteredSnackbar("Error al eliminar el centro. Inténtalo de nuevo.");
+                    });
+                });
+    }
+
+
+
     /**
      * Método utilitario para mostrar Snackbars centrados.
      * En Fragments, usamos requireView() para obtener la raíz del layout.
+     * @param message Texto a mostrar
      */
     private void showCenteredSnackbar(String message) {
         if (getView() == null) return;
 
         Snackbar snackbar = Snackbar.make(getView(), message, Snackbar.LENGTH_LONG);
-
-        /*Obtenemos el TextView interno del Snackbar para centrarlo*/
-        View snackbarView = snackbar.getView();
-        TextView textView = snackbarView.findViewById(com.google.android.material.R.id.snackbar_text);
+        TextView textView = snackbar.getView()
+                .findViewById(com.google.android.material.R.id.snackbar_text);
 
         if (textView != null) {
             textView.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
