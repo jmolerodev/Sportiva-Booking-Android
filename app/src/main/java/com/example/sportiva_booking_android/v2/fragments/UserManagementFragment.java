@@ -34,29 +34,34 @@ public class UserManagementFragment extends Fragment {
     /*Clave del Bundle para recibir el rol desde MainActivity*/
     private static final String ARG_ROL = "ROL";
 
-    /*Componentes de la vista*/
-    private TextView             tvTitulo;
-    private TextInputLayout      tilNombre, tilApellidos, tilEmail;
-    private TextInputLayout      tilPassword, tilConfirmPassword;
-    private TextInputLayout      tilDescripcion, tilAnnosExp, tilEspecialidad;
-    private TextInputEditText    etNombre, etApellidos, etEmail;
-    private TextInputEditText    etPassword, etConfirmPassword;
-    private TextInputEditText    etDescripcion, etAnnosExp;
+    /*Componentes de la vista — layouts de estado (loading, sin centro, formulario)*/
+    private View layoutLoading;
+    private View layoutSinCentro;
+    private View layoutFormulario;
+
+    /*Componentes de la vista — formulario*/
+    private TextView tvTitulo;
+    private TextInputLayout tilNombre, tilApellidos, tilEmail;
+    private TextInputLayout tilPassword, tilConfirmPassword;
+    private TextInputLayout tilDescripcion, tilAnnosExp, tilEspecialidad;
+    private TextInputEditText etNombre, etApellidos, etEmail;
+    private TextInputEditText etPassword, etConfirmPassword;
+    private TextInputEditText etDescripcion, etAnnosExp;
     private AutoCompleteTextView actvEspecialidad;
-    private View                 seccionProfesional;
-    private Button               btnConfirmar, btnCancelar;
+    private View seccionProfesional;
+    private Button btnConfirmar, btnCancelar, btnVolveraHomeUM;
 
     /*Firebase*/
-    private FirebaseAuth      firebaseAuth;
+    private FirebaseAuth firebaseAuth;
     private DatabaseReference personsRef;
 
     /*Servicios*/
     private SportCentreService sportCentreService;
 
     /*Estado interno del Fragment*/
-    private Rol     rolUsuarioLogueado;
-    private String  centroIdActual = null;
-    private boolean isLoading      = false;
+    private Rol rolUsuarioLogueado;
+    private String centroIdActual = null;
+    private boolean isLoading = false;
 
     /**
      * Crea una nueva instancia del Fragment pasando el rol por Bundle.
@@ -88,20 +93,24 @@ public class UserManagementFragment extends Fragment {
         recuperarRol();
 
         /*Inicializamos Firebase*/
-        firebaseAuth       = FirebaseAuth.getInstance();
-        personsRef         = FirebaseDatabase.getInstance().getReference("Persons");
+        firebaseAuth = FirebaseAuth.getInstance();
+        personsRef = FirebaseDatabase.getInstance().getReference("Persons");
         sportCentreService = new SportCentreService();
 
         inicializarVistas(view);
         configurarSegunRol();
 
-        /*Solo el ADMINISTRADOR necesita verificar que tiene centro antes de operar*/
+        /*Solo el ADMINISTRADOR necesita verificar que tiene centro antes de operar.
+          El ROOT ve el formulario directamente sin pasar por la verificación*/
         if (rolUsuarioLogueado == Rol.ADMINISTRADOR) {
             verificarCentroDeportivo();
+        } else {
+            mostrarFormulario();
         }
 
         btnConfirmar.setOnClickListener(v -> crearUsuario());
         btnCancelar.setOnClickListener(v -> volverAtras());
+        btnVolveraHomeUM.setOnClickListener(v -> finalizarYNavegarAlHome());
     }
 
     /**
@@ -125,26 +134,33 @@ public class UserManagementFragment extends Fragment {
      * Enlaza todas las vistas del layout con sus variables.
      */
     private void inicializarVistas(View view) {
-        tvTitulo           = view.findViewById(R.id.tvTituloUM);
-        tilNombre          = view.findViewById(R.id.tilNombreUM);
-        tilApellidos       = view.findViewById(R.id.tilApellidosUM);
-        tilEmail           = view.findViewById(R.id.tilEmailUM);
-        tilPassword        = view.findViewById(R.id.tilPasswordUM);
+
+        /*Layouts de estado*/
+        layoutLoading = view.findViewById(R.id.layoutLoadingUM);
+        layoutSinCentro = view.findViewById(R.id.layoutSinCentroUM);
+        layoutFormulario = view.findViewById(R.id.layoutFormularioUM);
+
+        tvTitulo = view.findViewById(R.id.tvTituloUM);
+        tilNombre = view.findViewById(R.id.tilNombreUM);
+        tilApellidos = view.findViewById(R.id.tilApellidosUM);
+        tilEmail = view.findViewById(R.id.tilEmailUM);
+        tilPassword = view.findViewById(R.id.tilPasswordUM);
         tilConfirmPassword = view.findViewById(R.id.tilConfirmPasswordUM);
-        tilDescripcion     = view.findViewById(R.id.tilDescripcionUM);
-        tilAnnosExp        = view.findViewById(R.id.tilAnnosExpUM);
-        tilEspecialidad    = view.findViewById(R.id.tilEspecialidadUM);
-        etNombre           = view.findViewById(R.id.etNombreUM);
-        etApellidos        = view.findViewById(R.id.etApellidosUM);
-        etEmail            = view.findViewById(R.id.etEmailUM);
-        etPassword         = view.findViewById(R.id.etPasswordUM);
-        etConfirmPassword  = view.findViewById(R.id.etConfirmPasswordUM);
-        etDescripcion      = view.findViewById(R.id.etDescripcionUM);
-        etAnnosExp         = view.findViewById(R.id.etAnnosExpUM);
-        actvEspecialidad   = view.findViewById(R.id.actvEspecialidadUM);
+        tilDescripcion = view.findViewById(R.id.tilDescripcionUM);
+        tilAnnosExp = view.findViewById(R.id.tilAnnosExpUM);
+        tilEspecialidad = view.findViewById(R.id.tilEspecialidadUM);
+        etNombre = view.findViewById(R.id.etNombreUM);
+        etApellidos = view.findViewById(R.id.etApellidosUM);
+        etEmail = view.findViewById(R.id.etEmailUM);
+        etPassword = view.findViewById(R.id.etPasswordUM);
+        etConfirmPassword = view.findViewById(R.id.etConfirmPasswordUM);
+        etDescripcion = view.findViewById(R.id.etDescripcionUM);
+        etAnnosExp = view.findViewById(R.id.etAnnosExpUM);
+        actvEspecialidad = view.findViewById(R.id.actvEspecialidadUM);
         seccionProfesional = view.findViewById(R.id.seccionProfesional);
-        btnConfirmar       = view.findViewById(R.id.btnConfirmarUM);
-        btnCancelar        = view.findViewById(R.id.btnCancelarUM);
+        btnConfirmar = view.findViewById(R.id.btnConfirmarUM);
+        btnCancelar = view.findViewById(R.id.btnCancelarUM);
+        btnVolveraHomeUM = view.findViewById(R.id.btnVolverHomeUM);
 
         cargarEspecialidades();
     }
@@ -161,7 +177,7 @@ public class UserManagementFragment extends Fragment {
 
     private void cargarEspecialidades() {
         Especialidad[] valores = Especialidad.values();
-        String[]       nombres = new String[valores.length];
+        String[] nombres = new String[valores.length];
         for (int i = 0; i < valores.length; i++) {
             nombres[i] = valores[i].name();
         }
@@ -173,50 +189,89 @@ public class UserManagementFragment extends Fragment {
         actvEspecialidad.setAdapter(adapter);
     }
 
+    /**
+     * Verifica si el administrador actual tiene un centro deportivo registrado.
+     * Replica el comportamiento de Angular: muestra loading mientras comprueba,
+     * luego muestra el formulario si hay centro o el empty state si no lo hay.
+     */
     private void verificarCentroDeportivo() {
         FirebaseUser user = firebaseAuth.getCurrentUser();
         if (user == null) return;
 
-        btnConfirmar.setEnabled(false);
+        /*Mostramos el spinner mientras se resuelve la consulta a Firebase*/
+        mostrarLoading();
 
         sportCentreService.getSportCentreByAdminUid(user.getUid(), centro -> {
             if (!isAdded()) return;
             requireActivity().runOnUiThread(() -> {
                 if (centro != null) {
                     centroIdActual = centro.getId();
-                    btnConfirmar.setEnabled(true);
+                    /*Centro encontrado — mostramos el formulario igual que en Angular*/
+                    mostrarFormulario();
                 } else {
-                    showCenteredSnackbar("Debes registrar tu Centro Deportivo antes de dar de alta profesionales");
+                    /*Sin centro registrado — mostramos el empty state en lugar del formulario*/
+                    mostrarSinCentro();
                 }
             });
         });
     }
 
+    /**
+     * Oculta loading y sin-centro; muestra únicamente el formulario.
+     */
+    private void mostrarFormulario() {
+        layoutLoading.setVisibility(View.GONE);
+        layoutSinCentro.setVisibility(View.GONE);
+        layoutFormulario.setVisibility(View.VISIBLE);
+    }
+
+    /**
+     * Muestra el spinner de carga; oculta el resto de estados.
+     */
+    private void mostrarLoading() {
+        layoutLoading.setVisibility(View.VISIBLE);
+        layoutSinCentro.setVisibility(View.GONE);
+        layoutFormulario.setVisibility(View.GONE);
+    }
+
+    /**
+     * Muestra el empty state de centro no registrado; oculta el resto de estados.
+     * Mismo comportamiento que el bloque @if (!cargandoCentro && !centroIdActual) en Angular.
+     */
+    private void mostrarSinCentro() {
+        layoutLoading.setVisibility(View.GONE);
+        layoutSinCentro.setVisibility(View.VISIBLE);
+        layoutFormulario.setVisibility(View.GONE);
+    }
+
     private void crearUsuario() {
         if (isLoading) return;
 
-        String nombre          = etNombre.getText().toString().trim();
-        String apellidos       = etApellidos.getText().toString().trim();
-        String email           = etEmail.getText().toString().trim();
-        String password        = etPassword.getText().toString().trim();
+        String nombre = etNombre.getText().toString().trim();
+        String apellidos = etApellidos.getText().toString().trim();
+        String email = etEmail.getText().toString().trim();
+        String password = etPassword.getText().toString().trim();
         String confirmPassword = etConfirmPassword.getText().toString().trim();
 
         limpiarErrores();
 
-        if (!validarFormularioBase(nombre, apellidos, email, password, confirmPassword)) {
-            showCenteredSnackbar("Revisa los errores en el formulario antes de continuar");
-            return;
-        }
+        /* Ejecutamos ambas validaciones para que los errores se marquen simultáneamente */
+        boolean baseValida = validarFormularioBase(nombre, apellidos, email, password, confirmPassword);
+        boolean proValido = true;
 
         if (rolUsuarioLogueado == Rol.ADMINISTRADOR) {
-            if (!validarCamposProfesional()) {
-                showCenteredSnackbar("Revisa los errores en el formulario antes de continuar");
-                return;
-            }
+            proValido = validarCamposProfesional();
+
             if (centroIdActual == null) {
                 showCenteredSnackbar("Debes registrar tu Centro Deportivo antes de dar de alta profesionales");
                 return;
             }
+        }
+
+        /* Si cualquiera de las validaciones falla, detenemos el proceso tras haber marcado los errores */
+        if (!baseValida || !proValido) {
+            showCenteredSnackbar("Revisa los errores en el formulario antes de continuar");
+            return;
         }
 
         isLoading = true;
@@ -234,8 +289,8 @@ public class UserManagementFragment extends Fragment {
                         if (rolUsuarioLogueado == Rol.ROOT) {
                             guardarAdministrador(uid, nombre, apellidos);
                         } else {
-                            String descripcion  = etDescripcion.getText().toString().trim();
-                            String annosExpStr  = etAnnosExp.getText().toString().trim();
+                            String descripcion = etDescripcion.getText().toString().trim();
+                            String annosExpStr = etAnnosExp.getText().toString().trim();
                             String especialidad = actvEspecialidad.getText().toString().trim();
                             guardarProfesional(uid, nombre, apellidos, descripcion,
                                     Integer.parseInt(annosExpStr), especialidad, adminIdActual);
@@ -265,6 +320,12 @@ public class UserManagementFragment extends Fragment {
                 });
     }
 
+    /**
+     * Construye el objeto Profesional y lo persiste en Firebase.
+     * Vincula directamente adminId y centroId en el momento del alta,
+     * replicando el comportamiento del controlador Angular donde ambos campos
+     * se asignan antes de llamar a saveProfesional().
+     */
     private void guardarProfesional(String uid, String nombre, String apellidos,
                                     String descripcion, int annosExp,
                                     String especialidad, String adminId) {
@@ -276,6 +337,11 @@ public class UserManagementFragment extends Fragment {
         nuevoPro.setDescripcion(descripcion);
         nuevoPro.setAnnos_experiencia(annosExp);
         nuevoPro.setEspecialidad(Especialidad.valueOf(especialidad));
+
+        /*Vinculamos al centro del administrador en el momento del alta —
+          mismo comportamiento que centroId: this.centroIdActual en Angular*/
+        nuevoPro.setAdminId(adminId);
+        nuevoPro.setCentroId(centroIdActual);
 
         personsRef.child(uid).setValue(nuevoPro)
                 .addOnSuccessListener(unused -> {
@@ -333,9 +399,9 @@ public class UserManagementFragment extends Fragment {
     }
 
     private boolean validarCamposProfesional() {
-        boolean valido      = true;
-        String descripcion  = etDescripcion.getText().toString().trim();
-        String annosExp     = etAnnosExp.getText().toString().trim();
+        boolean valido = true;
+        String descripcion = etDescripcion.getText().toString().trim();
+        String annosExp = etAnnosExp.getText().toString().trim();
         String especialidad = actvEspecialidad.getText().toString().trim();
 
         if (descripcion.isEmpty()) {
@@ -359,10 +425,10 @@ public class UserManagementFragment extends Fragment {
     private String validarPassword(String password) {
         StringBuilder errores = new StringBuilder();
 
-        if (password.length() < 9)                 errores.append("mínimo 9 caracteres, ");
-        if (!password.matches(".*[A-Z].*"))         errores.append("1 mayúscula, ");
-        if (!password.matches(".*[a-z].*"))         errores.append("1 minúscula, ");
-        if (!password.matches(".*\\d.*"))           errores.append("1 número, ");
+        if (password.length() < 9) errores.append("mínimo 9 caracteres, ");
+        if (!password.matches(".*[A-Z].*")) errores.append("1 mayúscula, ");
+        if (!password.matches(".*[a-z].*")) errores.append("1 minúscula, ");
+        if (!password.matches(".*\\d.*")) errores.append("1 número, ");
         if (!password.matches(".*[^A-Za-z\\d].*")) errores.append("1 carácter especial, ");
 
         if (errores.length() > 0) {
@@ -413,12 +479,10 @@ public class UserManagementFragment extends Fragment {
     private void finalizarYNavegarAlHome() {
         isLoading = false;
 
-
         /*Limpiamos el backstack para que el usuario no pueda volver al formulario al darle atrás*/
         requireActivity().getSupportFragmentManager().popBackStack(null, FragmentManager.POP_BACK_STACK_INCLUSIVE);
 
-        
-        /*reemplazamos el fragment actual por una nueva instancia del Home Fragment*/
+        /*Reemplazamos el fragment actual por una nueva instancia del HomeFragment*/
         requireActivity().getSupportFragmentManager()
                 .beginTransaction()
                 .replace(R.id.fragment_container, HomeFragment.newInstance(rolUsuarioLogueado))

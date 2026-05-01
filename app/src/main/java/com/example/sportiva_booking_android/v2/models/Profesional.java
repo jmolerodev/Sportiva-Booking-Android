@@ -10,10 +10,11 @@ public class Profesional extends Person {
     private String descripcion;
     private Integer annos_experiencia;
     private Especialidad especialidad;
+    private String adminId;
+    private String centroId;
 
     /*Constructor de la Clase*/
-    public Profesional (){
-
+    public Profesional() {
     }
 
     /*Getters y Setters de la Clase*/
@@ -39,5 +40,21 @@ public class Profesional extends Person {
 
     public void setEspecialidad(Especialidad especialidad) {
         this.especialidad = especialidad;
+    }
+
+    public String getAdminId() {
+        return adminId;
+    }
+
+    public void setAdminId(String adminId) {
+        this.adminId = adminId;
+    }
+
+    public String getCentroId() {
+        return centroId;
+    }
+
+    public void setCentroId(String centroId) {
+        this.centroId = centroId;
     }
 }

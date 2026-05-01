@@ -27,7 +27,7 @@
     </group>
 
     <group android:id="@+id/group_admin" android:visible="false">
-        <item android:id="@+id/nav_adm_1" android:title="Opcion Admin 1" android:icon="@android:drawable/ic_menu_manage" />
+        <item android:id="@+id/nav_adm_1" android:title="Alta de Profesionales" android:icon="@android:drawable/ic_menu_manage" />
         <item android:id="@+id/nav_adm_2" android:title="Opcion Admin 2" android:icon="@android:drawable/ic_menu_set_as" />
     </group>
 
