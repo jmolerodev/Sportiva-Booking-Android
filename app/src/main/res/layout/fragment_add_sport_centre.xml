@@ -22,10 +22,9 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="16dp"
-            android:text="Cargando datos del centro..."
+            android:text="Cargando centro..."
             android:textColor="@color/white"
-            android:textSize="16sp"
-            android:textStyle="bold" />
+            android:textSize="14sp" />
 
     </LinearLayout>
 
@@ -67,13 +66,28 @@
                         android:textSize="12sp"
                         android:textStyle="bold" />
 
-                    <ImageView
-                        android:id="@+id/ivFotoAddCentre"
+                    <!-- FrameLayout para superponer el spinner sobre la foto igual que en el perfil -->
+                    <FrameLayout
                         android:layout_width="120dp"
                         android:layout_height="120dp"
-                        android:layout_marginBottom="16dp"
-                        android:scaleType="centerCrop"
-                        android:src="@drawable/ic_centre_placeholder" />
+                        android:layout_marginBottom="16dp">
+
+                        <ImageView
+                            android:id="@+id/ivFotoAddCentre"
+                            android:layout_width="120dp"
+                            android:layout_height="120dp"
+                            android:scaleType="fitCenter"
+                            android:src="@drawable/ic_centre_placeholder" />
+
+                        <ProgressBar
+                            android:id="@+id/pbGuardandoAddCentre"
+                            android:layout_width="48dp"
+                            android:layout_height="48dp"
+                            android:layout_gravity="center"
+                            android:indeterminateTint="@color/white"
+                            android:visibility="gone" />
+
+                    </FrameLayout>
 
                     <LinearLayout
                         android:layout_width="wrap_content"
@@ -748,38 +762,29 @@
 
             </androidx.cardview.widget.CardView>
 
-            <ProgressBar
-                android:id="@+id/pbGuardandoAddCentre"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
-                android:layout_gravity="center"
-                android:layout_marginBottom="12dp"
-                android:indeterminateTint="@color/white"
-                android:visibility="gone" />
-
             <Button
                 android:id="@+id/btnGuardarAddCentre"
                 android:layout_width="match_parent"
                 android:layout_height="52dp"
                 android:layout_marginBottom="12dp"
-                android:backgroundTint="@color/background"
+                android:backgroundTint="#3A3537"
                 android:text="Guardar centro"
                 android:textColor="@color/white"
-                android:textSize="15sp"
+                android:textSize="14sp"
                 android:textStyle="bold"
                 app:cornerRadius="12dp" />
 
             <Button
                 android:id="@+id/btnCancelarAddCentre"
-                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
                 android:layout_width="match_parent"
                 android:layout_height="52dp"
                 android:layout_marginBottom="32dp"
+                android:backgroundTint="#3A3537"
                 android:text="Cancelar"
                 android:textColor="@color/white"
-                android:textSize="15sp"
-                app:cornerRadius="12dp"
-                app:strokeColor="@color/white" />
+                android:textSize="14sp"
+                android:textStyle="bold"
+                app:cornerRadius="12dp" />
 
         </LinearLayout>
 

@@ -163,4 +163,31 @@ public class SportCentreService {
     public interface OnFailureCallback {
         void onFailure(Exception e);
     }
+
+    /**
+     * Interfaz de callback para operaciones simples de éxito o error.
+     * Replica la OperationCallback de AdministradorService.
+     */
+    public interface OperationCallback {
+        void onSuccess();
+        void onError(String errorMessage);
+    }
+
+    /**
+     * Elimina de forma atómica el nodo del centro deportivo en 'Sports-Centre'
+     * y limpia el centroId de todos los profesionales vinculados en 'Persons'.
+     * Replica el deleteSportCentreComplete() del servicio Angular.
+     *
+     * @param adminUid UID del administrador propietario del centro (clave del nodo)
+     * @param callback Callback que notifica el resultado de la operación
+     */
+    public void deleteSportCentreCompleto(String adminUid, OperationCallback callback) {
+        FirebaseDatabase.getInstance()
+                .getReference(COLLECTION_NAME)
+                .child(adminUid)
+                .removeValue()
+                .addOnSuccessListener(unused -> callback.onSuccess())
+                .addOnFailureListener(e -> callback.onError(e.getMessage()));
+    }
+
 }

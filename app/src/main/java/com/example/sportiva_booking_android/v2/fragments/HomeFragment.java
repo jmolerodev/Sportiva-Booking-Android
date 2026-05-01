@@ -11,7 +11,6 @@ import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.appcompat.app.AlertDialog;
 import androidx.fragment.app.Fragment;
 
 import com.example.sportiva_booking_android.R;
@@ -24,9 +23,7 @@ import com.google.android.material.snackbar.Snackbar;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
-import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
-import com.google.firebase.storage.FirebaseStorage;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -35,9 +32,6 @@ public class HomeFragment extends Fragment {
 
     /*Clave para pasar el rol como argumento al fragment*/
     private static final String ARG_ROL = "rol";
-
-    /*Nodo raíz de centros deportivos en RTDB*/
-    private static final String COLLECTION_CENTRES = "Sports-Centre";
 
     /*Rol del usuario autenticado*/
     private Rol userRol;
@@ -48,8 +42,6 @@ public class HomeFragment extends Fragment {
     /*Servicios*/
     private SportCentreService sportCentreService;
     private MembershipService  membershipService;
-
-    /*--- Vistas del layout ---*/
 
     /*Spinner de carga global*/
     private View layoutLoading;
@@ -475,8 +467,6 @@ public class HomeFragment extends Fragment {
         return card;
     }
 
-
-
     /**
      * Abre AddSportCentreFragment en modo creación o edición.
      * Replica la navegación router.navigate(['/add-sport-centre']) de Angular.
@@ -493,65 +483,75 @@ public class HomeFragment extends Fragment {
     }
 
     /**
-     * Muestra un AlertDialog de confirmación antes de eliminar el centro.
-     * Replica el snackbarService.showConfirm() de Angular.
-     * @param centro Centro deportivo que se quiere eliminar
+     * Muestra un Snackbar de confirmación antes de proceder con la eliminación del centro.
+     * Advierte al usuario del alcance del borrado e incluye acción de confirmación.
+     * Replica el patrón confirmarEliminacion() de AdminListFragment.
+     * @param centro Centro deportivo que se desea eliminar
      */
     private void confirmarEliminacion(SportCentre centro) {
-        if (getContext() == null) return;
+        if (getView() == null) return;
 
-        new AlertDialog.Builder(getContext())
-                .setTitle("Eliminar centro")
-                .setMessage("¿Estás seguro de que quieres eliminar este centro deportivo? Esta acción no se puede deshacer.")
-                .setPositiveButton("Eliminar", (dialog, which) -> eliminarCentro(centro))
-                .setNegativeButton("Cancelar", null)
-                .show();
+        Snackbar snackbar = Snackbar.make(
+                getView(),
+                "¿Eliminar " + centro.getNombre() + "? Esta acción no se puede deshacer.",
+                Snackbar.LENGTH_LONG
+        );
+
+        snackbar.setAction("ELIMINAR", v -> eliminarCentro(centro));
+        snackbar.setActionTextColor(getResources().getColor(android.R.color.holo_red_light, null));
+
+        /*Centramos el texto igual que en el resto de Snackbars del proyecto*/
+        View snackbarView = snackbar.getView();
+        TextView textView = snackbarView.findViewById(com.google.android.material.R.id.snackbar_text);
+
+        if (textView != null) {
+            textView.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
+            textView.setGravity(Gravity.CENTER_HORIZONTAL);
+        }
+
+        snackbar.show();
     }
 
     /**
-     * Elimina el centro de RTDB y su foto de Storage si la tiene.
-     * Replica el deleteSportCentreComplete() del servicio Angular.
+     * Gestiona el proceso de eliminación del centro deportivo delegando al servicio.
+     * Deshabilita el botón mientras procesa para evitar pulsaciones dobles.
+     * Replica el patrón eliminarAdministrador() de AdminListFragment.
      * @param centro Centro deportivo a eliminar
      */
     private void eliminarCentro(SportCentre centro) {
-        mostrarLoading(true);
 
-        /*Si tiene foto la borramos de Storage antes de eliminar el nodo*/
-        if (centro.getFoto() != null && !centro.getFoto().isEmpty()) {
-            try {
-                FirebaseStorage.getInstance()
-                        .getReferenceFromUrl(centro.getFoto())
-                        .delete();
-            } catch (Exception ignored) {}
-        }
+        /*Deshabilitamos el botón mientras dura la operación*/
+        btnEliminarCentro.setEnabled(false);
 
-        /*Borramos el nodo de RTDB usando el adminUid como clave (igual que en Angular)*/
-        FirebaseDatabase.getInstance()
-                .getReference(COLLECTION_CENTRES)
-                .child(currentUid)
-                .removeValue()
-                .addOnSuccessListener(unused -> {
-                    if (getActivity() == null) return;
-                    getActivity().runOnUiThread(() -> {
-                        mostrarLoading(false);
-                        showCenteredSnackbar("Centro eliminado correctamente");
+        sportCentreService.deleteSportCentreCompleto(currentUid, new SportCentreService.OperationCallback() {
 
-                        /*Refrescamos la sección para mostrar el div de crear*/
-                        cardCentroAdmin.setVisibility(View.GONE);
-                        divSinCentroAdmin.setVisibility(View.VISIBLE);
-                        btnCrearCentro.setOnClickListener(v -> abrirAddSportCentre(false));
-                    });
-                })
-                .addOnFailureListener(e -> {
-                    if (getActivity() == null) return;
-                    getActivity().runOnUiThread(() -> {
-                        mostrarLoading(false);
-                        showCenteredSnackbar("Error al eliminar el centro. Inténtalo de nuevo.");
-                    });
+            @Override
+            public void onSuccess() {
+                if (getActivity() == null) return;
+
+                getActivity().runOnUiThread(() -> {
+                    btnEliminarCentro.setEnabled(true);
+
+                    /*Ocultamos la card y mostramos el div de creación*/
+                    cardCentroAdmin.setVisibility(View.GONE);
+                    divSinCentroAdmin.setVisibility(View.VISIBLE);
+                    btnCrearCentro.setOnClickListener(v -> abrirAddSportCentre(false));
+
+                    showCenteredSnackbar("Centro eliminado correctamente");
                 });
+            }
+
+            @Override
+            public void onError(String errorMessage) {
+                if (getActivity() == null) return;
+
+                getActivity().runOnUiThread(() -> {
+                    btnEliminarCentro.setEnabled(true);
+                    showCenteredSnackbar("Error al eliminar el centro. Inténtalo de nuevo.");
+                });
+            }
+        });
     }
-
-
 
     /**
      * Método utilitario para mostrar Snackbars centrados.

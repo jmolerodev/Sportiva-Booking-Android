@@ -23,6 +23,10 @@ import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
 import com.bumptech.glide.Glide;
+import com.bumptech.glide.load.DataSource;
+import com.bumptech.glide.load.engine.GlideException;
+import com.bumptech.glide.request.RequestListener;
+import com.bumptech.glide.request.target.Target;
 import com.example.sportiva_booking_android.R;
 import com.example.sportiva_booking_android.v2.models.SportCentre;
 import com.example.sportiva_booking_android.v2.models.SportCentre.HorarioDia;
@@ -41,67 +45,67 @@ import java.util.UUID;
 
 public class AddSportCentreFragment extends Fragment {
 
-    /*Clave para indicar si venimos en modo edición*/
     private static final String ARG_MODO_EDICION = "modoEdicion";
 
-    /*Días de la semana — mismo orden que en Angular*/
+    /* días de la semana — mismo orden en RTDB y en el formulario */
     private static final String[] DIAS = {
             "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"
     };
 
-    /*Modo edición o creación*/
+    /* modo edición o creación */
     private boolean modoEdicion = false;
 
-    /*UID del administrador autenticado*/
+    /* UID del administrador autenticado */
     private String adminUid;
 
-    /*Centro cargado en modo edición (null en creación)*/
+    /* centro cargado en modo edición (null en creación) */
     private SportCentre centroOriginal;
 
-    /*Control de carga*/
+    /* control de carga */
     private boolean isLoading        = false;
     private boolean isInitialLoading = false;
 
-    /*Imagen seleccionada pendiente de subir*/
+    /* imagen seleccionada pendiente de subir */
     private Uri    imagenSeleccionada = null;
     private String urlImagenOriginal  = null;
 
-    /*Servicios y Firebase*/
+    /* servicios y Firebase */
     private SportCentreService sportCentreService;
     private FirebaseStorage    firebaseStorage;
 
-    /*--- Vistas globales ---*/
+    /* vistas — pantalla de carga global */
     private View        layoutCargando;
     private View        layoutContenido;
+
+    /* vistas — spinner sobre la foto */
     private ProgressBar pbGuardando;
 
-    /*--- Campos del formulario ---*/
+    /* vistas — campos del formulario */
     private TextInputLayout   tilNombre, tilDireccion, tilTelefono;
     private TextInputEditText etNombre, etDireccion, etTelefono;
 
-    /*--- Imagen ---*/
+    /* vistas — imagen */
     private ImageView ivFotoCentro;
     private Button    btnCambiarFoto, btnEliminarFoto;
 
-    /*--- Botones de acción ---*/
+    /* vistas — botones de acción */
     private Button btnGuardar, btnCancelar;
 
-    /*--- Horario: mapa de vistas por día ---*/
+    /* horario: mapa de vistas por día */
     private final Map<String, Switch>   switchesDia    = new HashMap<>();
     private final Map<String, TextView> tvAperturasDia = new HashMap<>();
     private final Map<String, TextView> tvCierresDia   = new HashMap<>();
     private final Map<String, View>     rowsHorarioDia = new HashMap<>();
 
-    /*Launcher para el selector de imagen*/
+    /* launcher para el selector de imagen del sistema */
     private ActivityResultLauncher<Intent> imagePickerLauncher;
 
-    /*----------------------------------------------------------------------
-     * Factory method
-     *----------------------------------------------------------------------*/
 
     /**
-     * Crea el fragment pasando si viene en modo edición.
+     * Crea una nueva instancia del fragment pasando el modo por Bundle.
+     *
      * @param modoEdicion true si el admin ya tiene centro y quiere editarlo
+     * @return Instancia configurada del fragment
      */
     public static AddSportCentreFragment newInstance(boolean modoEdicion) {
         AddSportCentreFragment fragment = new AddSportCentreFragment();
@@ -110,10 +114,6 @@ public class AddSportCentreFragment extends Fragment {
         fragment.setArguments(args);
         return fragment;
     }
-
-    /*----------------------------------------------------------------------
-     * Ciclo de vida
-     *----------------------------------------------------------------------*/
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
@@ -130,7 +130,7 @@ public class AddSportCentreFragment extends Fragment {
         sportCentreService = new SportCentreService();
         firebaseStorage    = FirebaseStorage.getInstance();
 
-        /*Registramos el launcher antes de adjuntarnos a la Activity*/
+        /* registramos el launcher antes de adjuntarnos a la Activity */
         imagePickerLauncher = registerForActivityResult(
                 new ActivityResultContracts.StartActivityForResult(),
                 result -> {
@@ -167,13 +167,12 @@ public class AddSportCentreFragment extends Fragment {
         }
     }
 
-    /*----------------------------------------------------------------------
-     * Binding de vistas
-     *----------------------------------------------------------------------*/
 
     /**
      * Enlaza todas las vistas del layout con sus referencias Java.
-     * @param view Vista raíz del fragment
+     * Arranca siempre con la pantalla de carga visible si venimos en modo edición.
+     *
+     * @param view Vista raíz del fragment inflada en onCreateView
      */
     private void bindViews(View view) {
         layoutCargando  = view.findViewById(R.id.layoutCargandoAddCentre);
@@ -195,19 +194,20 @@ public class AddSportCentreFragment extends Fragment {
         btnGuardar  = view.findViewById(R.id.btnGuardarAddCentre);
         btnCancelar = view.findViewById(R.id.btnCancelarAddCentre);
 
-        /*Enlazamos los controles de horario por cada día*/
+        /* enlazamos los controles de horario por cada día */
         for (String dia : DIAS) {
             String tag = diaTag(dia);
-            switchesDia.put(dia,    view.findViewWithTag("switch_"     + tag));
-            tvAperturasDia.put(dia, view.findViewWithTag("apertura_"   + tag));
-            tvCierresDia.put(dia,   view.findViewWithTag("cierre_"     + tag));
-            rowsHorarioDia.put(dia, view.findViewWithTag("row_horario_"+ tag));
+            switchesDia.put(dia,    view.findViewWithTag("switch_"      + tag));
+            tvAperturasDia.put(dia, view.findViewWithTag("apertura_"    + tag));
+            tvCierresDia.put(dia,   view.findViewWithTag("cierre_"      + tag));
+            rowsHorarioDia.put(dia, view.findViewWithTag("row_horario_" + tag));
         }
     }
 
     /**
      * Convierte el nombre del día a un tag seguro para usarlo como identificador de vistas.
      * Elimina tildes y espacios para evitar problemas con los tags XML.
+     *
      * @param dia Nombre del día (ej: "Miércoles")
      * @return Tag limpio (ej: "miercoles")
      */
@@ -219,9 +219,6 @@ public class AddSportCentreFragment extends Fragment {
                 .replace(" ", "_");
     }
 
-    /*----------------------------------------------------------------------
-     * Listeners
-     *----------------------------------------------------------------------*/
 
     /**
      * Asigna todos los listeners del formulario: botones, switches de horario
@@ -230,11 +227,22 @@ public class AddSportCentreFragment extends Fragment {
     private void configurarListeners() {
 
         btnGuardar.setOnClickListener(v  -> guardarCentro());
-        btnCancelar.setOnClickListener(v -> navegarAtras());
+
+        /* Modificado: Muestra snackbar de cancelación y restaura el estado anterior */
+        btnCancelar.setOnClickListener(v -> {
+            if (modoEdicion && centroOriginal != null) {
+                showSnackbar("Se han cancelado los cambios en la edición");
+                rellenarFormulario(centroOriginal);
+            } else {
+                limpiarFormularioNuevo();
+                showSnackbar("Se ha limpiado el formulario");
+            }
+        });
+
         btnCambiarFoto.setOnClickListener(v -> abrirGaleria());
         btnEliminarFoto.setOnClickListener(v -> eliminarFoto());
 
-        /*Por cada día configuramos el switch y los pickers de hora*/
+        /* por cada día configuramos el switch y los pickers de hora */
         for (String dia : DIAS) {
             Switch   sw     = switchesDia.get(dia);
             TextView tvAp   = tvAperturasDia.get(dia);
@@ -243,25 +251,21 @@ public class AddSportCentreFragment extends Fragment {
 
             if (sw == null || tvAp == null || tvCi == null || rowHor == null) continue;
 
-            /*Switch: muestra u oculta la fila de horas*/
+            /* switch: muestra u oculta la fila de horas */
             sw.setOnCheckedChangeListener((btn, checked) ->
                     rowHor.setVisibility(checked ? View.VISIBLE : View.GONE));
 
-            /*Picker de apertura*/
+            /* picker de apertura */
             tvAp.setOnClickListener(v -> mostrarTimePicker(tvAp));
 
-            /*Picker de cierre*/
+            /* picker de cierre */
             tvCi.setOnClickListener(v -> mostrarTimePicker(tvCi));
         }
     }
 
-    /*----------------------------------------------------------------------
-     * Carga inicial en modo edición
-     *----------------------------------------------------------------------*/
 
     /**
      * Carga el centro existente del administrador desde Firebase y rellena el formulario.
-     * Replica el bloque ngOnInit en modo edición del componente Angular.
      */
     private void cargarDatosParaEdicion() {
         if (adminUid == null) return;
@@ -273,16 +277,19 @@ public class AddSportCentreFragment extends Fragment {
                 if (centro != null) {
                     centroOriginal = centro;
                     rellenarFormulario(centro);
+                    /* mostrarCargando(false) se llama desde cargarFotoYMostrar()
+                       una vez que la foto esté lista o confirmado que no hay foto */
                 } else {
                     showSnackbar("No se encontró el centro deportivo");
+                    mostrarCargando(false);
                 }
-                mostrarCargando(false);
             });
         });
     }
 
     /**
      * Rellena todos los campos del formulario con los datos del centro cargado.
+     *
      * @param centro Centro deportivo obtenido de Firebase
      */
     private void rellenarFormulario(SportCentre centro) {
@@ -290,18 +297,7 @@ public class AddSportCentreFragment extends Fragment {
         etDireccion.setText(centro.getDireccion());
         etTelefono.setText(centro.getTelefono());
 
-        /*Imagen existente*/
-        if (centro.getFoto() != null && !centro.getFoto().isEmpty()) {
-            urlImagenOriginal = centro.getFoto();
-            Glide.with(this)
-                    .load(centro.getFoto())
-                    .placeholder(R.drawable.ic_centre_placeholder)
-                    .error(R.drawable.ic_centre_placeholder)
-                    .centerCrop()
-                    .into(ivFotoCentro);
-        }
-
-        /*Horario*/
+        /* horario */
         Map<String, HorarioDia> horario = centro.getHorario();
         if (horario != null) {
             for (String dia : DIAS) {
@@ -323,10 +319,62 @@ public class AddSportCentreFragment extends Fragment {
         } else {
             inicializarHorarioPorDefecto();
         }
+
+        /* cargamos la foto y solo revelamos el contenido cuando esté lista */
+        cargarFotoYMostrar(centro.getFoto());
     }
 
     /**
-     * Inicializa el horario con los valores por defecto: todos los días abiertos,
+     * Carga la foto del centro con Glide y espera a que esté lista antes de revelar
+     * el contenido — el usuario nunca ve el placeholder en su lugar.
+     * Si no hay URL muestra el placeholder y revela el contenido directamente.
+     *
+     * @param foto URL de la foto almacenada en Storage, o vacío si no tiene
+     */
+    private void cargarFotoYMostrar(String foto) {
+        if (foto != null && !foto.isEmpty()) {
+            urlImagenOriginal = foto;
+            imagenSeleccionada = null; // Reseteamos selección local al cargar desde URL
+            Glide.with(this)
+                    .load(foto)
+                    .circleCrop()
+                    .listener(new RequestListener<android.graphics.drawable.Drawable>() {
+                        @Override
+                        public boolean onLoadFailed(@Nullable GlideException e,
+                                                    Object model,
+                                                    Target<android.graphics.drawable.Drawable> target,
+                                                    boolean isFirstResource) {
+                            if (!isAdded()) return false;
+                            /* si falla mostramos el placeholder y revelamos el contenido igualmente */
+                            ivFotoCentro.setImageResource(R.drawable.ic_centre_placeholder);
+                            mostrarCargando(false);
+                            return true;
+                        }
+
+                        @Override
+                        public boolean onResourceReady(android.graphics.drawable.Drawable resource,
+                                                       Object model,
+                                                       Target<android.graphics.drawable.Drawable> target,
+                                                       DataSource dataSource,
+                                                       boolean isFirstResource) {
+                            if (!isAdded()) return false;
+                            /* foto lista — ya podemos revelar el contenido sin placeholder */
+                            mostrarCargando(false);
+                            return false;
+                        }
+                    })
+                    .into(ivFotoCentro);
+        } else {
+            /* sin foto mostramos el placeholder y revelamos el contenido directamente */
+            ivFotoCentro.setImageResource(R.drawable.ic_centre_placeholder);
+            urlImagenOriginal = null;
+            imagenSeleccionada = null;
+            mostrarCargando(false);
+        }
+    }
+
+    /**
+     * Inicializa el horario con valores por defecto: todos los días abiertos,
      * apertura a las 08:00 y cierre a las 22:00. Se usa en modo creación.
      */
     private void inicializarHorarioPorDefecto() {
@@ -343,13 +391,10 @@ public class AddSportCentreFragment extends Fragment {
         }
     }
 
-    /*----------------------------------------------------------------------
-     * Gestión de imagen
-     *----------------------------------------------------------------------*/
 
     /**
-     * Abre la galería del dispositivo para seleccionar una imagen del centro.
-     * Usa ACTION_PICK para evitar que el sistema ofrezca la cámara como opción.
+     * Abre directamente la galería del dispositivo usando ACTION_PICK sobre
+     * el content URI de imágenes — evita que el sistema ofrezca la cámara como opción.
      */
     private void abrirGaleria() {
         Intent intent = new Intent(Intent.ACTION_PICK,
@@ -359,22 +404,22 @@ public class AddSportCentreFragment extends Fragment {
     }
 
     /**
-     * Recibe la URI de la imagen seleccionada, la guarda como pendiente de subir
-     * y muestra la preview de forma inmediata con Glide.
-     * @param uri URI local de la imagen seleccionada por el usuario
+     * Recibe la URI seleccionada desde la galería, guarda la imagen pendiente de subir
+     * y muestra la preview de forma inmediata cargando la URI local con Glide.
+     *
+     * @param uri URI de la imagen seleccionada por el usuario
      */
     private void onImagenSeleccionada(Uri uri) {
         imagenSeleccionada = uri;
         Glide.with(this)
                 .load(uri)
-                .centerCrop()
+                .circleCrop()
                 .into(ivFotoCentro);
     }
 
     /**
      * Elimina la imagen seleccionada y resetea el ImageView al placeholder.
      * El borrado real en Storage ocurre al guardar, no en este momento.
-     * Replica el método eliminarImagen() del componente Angular.
      */
     private void eliminarFoto() {
         imagenSeleccionada = null;
@@ -383,9 +428,9 @@ public class AddSportCentreFragment extends Fragment {
     }
 
     /**
-     * Sube la nueva imagen a Firebase Storage bajo la ruta Sport-Centre/uuid,
-     * elimina la anterior si existía, y delega la persistencia final en guardarDatosFinales().
-     * Replica el bloque uploadBytes de Angular.
+     * Sube la nueva imagen a Storage bajo la ruta Sport-Centre/uuid,
+     * borra la anterior si existía y delega la persistencia final en guardarDatosFinales().
+     *
      * @param nombre    Nombre del centro
      * @param direccion Dirección del centro
      * @param telefono  Teléfono del centro
@@ -393,13 +438,14 @@ public class AddSportCentreFragment extends Fragment {
     private void subirFotoYGuardar(String nombre, String direccion, String telefono) {
         if (imagenSeleccionada == null) return;
 
-        /*Si había foto anterior la eliminamos de Storage antes de subir la nueva*/
+        /* si había foto anterior la eliminamos de Storage antes de subir la nueva */
         if (urlImagenOriginal != null && !urlImagenOriginal.isEmpty()) {
             try {
                 firebaseStorage.getReferenceFromUrl(urlImagenOriginal).delete();
             } catch (Exception ignored) {}
         }
 
+        /* uuid para garantizar unicidad y evitar conflictos de caché */
         StorageReference fileRef = firebaseStorage.getReference()
                 .child("Sport-Centre/" + UUID.randomUUID());
 
@@ -418,14 +464,10 @@ public class AddSportCentreFragment extends Fragment {
                 });
     }
 
-    /*----------------------------------------------------------------------
-     * Guardado
-     *----------------------------------------------------------------------*/
 
     /**
      * Punto de entrada del formulario al pulsar "Guardar".
-     * Valida, construye el objeto, gestiona la imagen y persiste en RTDB.
-     * Replica el método saveSportCentre() del componente Angular.
+     * Valida, gestiona la imagen si la hay y delega la escritura en guardarDatosFinales().
      */
     private void guardarCentro() {
         if (isLoading || adminUid == null) return;
@@ -444,15 +486,15 @@ public class AddSportCentreFragment extends Fragment {
         setLoading(true);
 
         if (imagenSeleccionada != null) {
-            /*Hay imagen nueva: la subimos y luego guardamos*/
+            /* hay imagen nueva: la subimos y luego guardamos */
             subirFotoYGuardar(nombre, direccion, telefono);
 
         } else if (urlImagenOriginal == null) {
-            /*El usuario eliminó la imagen o no hay foto — guardamos sin foto*/
+            /* el usuario eliminó la imagen o no hay foto — guardamos sin foto */
             if (centroOriginal != null
                     && centroOriginal.getFoto() != null
                     && !centroOriginal.getFoto().isEmpty()) {
-                /*Borramos la imagen anterior de Storage*/
+                /* borramos la imagen anterior de Storage */
                 try {
                     firebaseStorage.getReferenceFromUrl(centroOriginal.getFoto()).delete();
                 } catch (Exception ignored) {}
@@ -460,14 +502,15 @@ public class AddSportCentreFragment extends Fragment {
             guardarDatosFinales(nombre, direccion, telefono, "");
 
         } else {
-            /*Sin imagen nueva — mantenemos la URL original*/
+            /* sin imagen nueva — mantenemos la URL original */
             guardarDatosFinales(nombre, direccion, telefono, urlImagenOriginal);
         }
     }
 
     /**
-     * Construye el objeto SportCentre, lo persiste en RTDB y navega atrás.
-     * Replica el método guardarDatosFinales() del componente Angular.
+     * Construye el objeto SportCentre, lo persiste en RTDB.
+     * Modificado: No navega atrás tras guardar para permitir seguir editando.
+     *
      * @param nombre    Nombre del centro
      * @param direccion Dirección del centro
      * @param telefono  Teléfono del centro
@@ -491,7 +534,11 @@ public class AddSportCentreFragment extends Fragment {
                                 ? "Centro actualizado correctamente"
                                 : "Centro creado correctamente");
                         setLoading(false);
-                        navegarAtras();
+
+                        /* Actualizamos el objeto original para futuras cancelaciones y cambiamos a modo edición */
+                        centroOriginal = centro;
+                        urlImagenOriginal = foto;
+                        modoEdicion = true;
                     });
                 },
                 e -> {
@@ -506,7 +553,8 @@ public class AddSportCentreFragment extends Fragment {
 
     /**
      * Recorre las vistas de horario y construye el mapa de HorarioDia
-     * que se guardará en Firebase. Replica la estructura horario de Angular.
+     * que se guardará en Firebase.
+     *
      * @return Mapa con la configuración de horario de cada día de la semana
      */
     private Map<String, HorarioDia> construirHorario() {
@@ -531,13 +579,11 @@ public class AddSportCentreFragment extends Fragment {
         return horario;
     }
 
-    /*----------------------------------------------------------------------
-     * Validación
-     *----------------------------------------------------------------------*/
 
     /**
      * Valida que los tres campos obligatorios del formulario no estén vacíos.
-     * Marca con error los TextInputLayout correspondientes igual que en SignUpActivity.
+     * Marca con error los TextInputLayout correspondientes si alguno falla.
+     *
      * @return true si el formulario es válido
      */
     private boolean validarFormulario(String nombre, String direccion, String telefono) {
@@ -570,19 +616,28 @@ public class AddSportCentreFragment extends Fragment {
         tilTelefono.setError(null);
     }
 
-    /*----------------------------------------------------------------------
-     * Time picker
-     *----------------------------------------------------------------------*/
+    /**
+     * Limpia todos los campos del formulario cuando el usuario está en modo creación.
+     */
+    private void limpiarFormularioNuevo() {
+        etNombre.setText("");
+        etDireccion.setText("");
+        etTelefono.setText("");
+        eliminarFoto();
+        inicializarHorarioPorDefecto();
+    }
+
 
     /**
      * Abre el diálogo nativo de Android para seleccionar una hora.
      * Al confirmar actualiza el TextView con el formato HH:mm.
+     *
      * @param target TextView de apertura o cierre que recibirá la hora seleccionada
      */
     private void mostrarTimePicker(TextView target) {
         if (getContext() == null) return;
 
-        /*Parseamos la hora actual del TextView para pre-seleccionarla en el picker*/
+        /* parseamos la hora actual del TextView para pre-seleccionarla en el picker */
         String actual = target.getText().toString();
         int hora   = 8;
         int minuto = 0;
@@ -598,13 +653,12 @@ public class AddSportCentreFragment extends Fragment {
         ).show();
     }
 
-    /*----------------------------------------------------------------------
-     * UI helpers
-     *----------------------------------------------------------------------*/
 
     /**
-     * Controla la visibilidad del spinner de carga inicial y del contenido del formulario.
-     * @param cargando true para mostrar el spinner, false para mostrar el formulario
+     * Controla la visibilidad de la pantalla de carga global y del contenido del formulario.
+     * Solo se activa en modo edición mientras se esperan los datos de Firebase.
+     *
+     * @param cargando true para mostrar el spinner, false para revelar el formulario
      */
     private void mostrarCargando(boolean cargando) {
         if (layoutCargando == null || layoutContenido == null) return;
@@ -613,8 +667,9 @@ public class AddSportCentreFragment extends Fragment {
     }
 
     /**
-     * Activa o desactiva el ProgressBar de guardado y los botones de acción.
-     * Evita envíos duplicados mientras la operación está en curso.
+     * Muestra u oculta el spinner sobre la foto y bloquea los botones de acción
+     * durante operaciones asíncronas para evitar envíos duplicados.
+     *
      * @param loading true para bloquear la interacción, false para restaurarla
      */
     private void setLoading(boolean loading) {
@@ -626,20 +681,21 @@ public class AddSportCentreFragment extends Fragment {
     }
 
     /**
-     * Navega atrás en el back stack del fragment.
-     * Equivale a cancelarEdicion() / navigateToHome() en Angular.
+     * Navega atrás en el back stack del fragment
      */
     private void navegarAtras() {
         if (getParentFragmentManager().getBackStackEntryCount() > 0) {
             getParentFragmentManager().popBackStack();
-        } else if (getActivity() != null) {
-            getActivity().onBackPressed();
+        } else {
+            requireActivity().getOnBackPressedDispatcher().onBackPressed();
         }
     }
 
     /**
      * Muestra un Snackbar centrado con el mensaje recibido.
-     * @param message Texto a mostrar
+     * Comprueba isAdded() antes de actuar para evitar crashes si el fragment ya no está adjunto.
+     *
+     * @param message Texto a mostrar en el Snackbar
      */
     private void showSnackbar(String message) {
         if (!isAdded() || getView() == null) return;
