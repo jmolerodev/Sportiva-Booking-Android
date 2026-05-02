@@ -6,6 +6,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
@@ -13,6 +14,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
+import com.bumptech.glide.Glide;
 import com.example.sportiva_booking_android.R;
 import com.example.sportiva_booking_android.v2.enums.Rol;
 import com.example.sportiva_booking_android.v2.models.Membership;
@@ -55,7 +57,10 @@ public class HomeFragment extends Fragment {
     private LinearLayout sectionCliente;
     private LinearLayout sectionRoot;
 
-    /*Cards de datos del centro (Admin y Pro)*/
+    /*
+     * Contenedores donde se infla dinámicamente item_centro_card.xml.
+     * Se usan como parent en inflarCardCentro() para cada rol.
+     */
     private LinearLayout cardCentroAdmin;
     private LinearLayout cardCentroPro;
 
@@ -71,17 +76,12 @@ public class HomeFragment extends Fragment {
     private LinearLayout listSinMembresia;
     private LinearLayout bannerSinMembresia;
 
-    /*TextViews de datos del centro Admin*/
-    private TextView tvNombreAdmin;
-    private TextView tvDireccionAdmin;
-    private TextView tvTelefonoAdmin;
-
-    /*TextViews de datos del centro Pro*/
-    private TextView tvNombrePro;
-    private TextView tvDireccionPro;
-    private TextView tvTelefonoPro;
-
-    /*Botones de acción del Admin*/
+    /*
+     * Botones de acción del Admin.
+     * Se reasignan en inflarCardCentro() cada vez que se infla la card,
+     * para que confirmarEliminacion() y eliminarCentro() siempre apunten
+     * a la instancia activa dentro de item_centro_card.xml.
+     */
     private Button btnCrearCentro;
     private Button btnEditarCentro;
     private Button btnEliminarCentro;
@@ -150,6 +150,9 @@ public class HomeFragment extends Fragment {
 
     /**
      * Enlaza todas las vistas del layout con sus referencias Java.
+     * Los botones btnEditarCentro y btnEliminarCentro se obtienen aquí como null
+     * porque viven dentro de item_centro_card.xml, que se infla dinámicamente.
+     * Se reasignan en inflarCardCentro() cuando se construye la card del Admin.
      * @param view Vista raíz del fragment inflada
      */
     private void bindViews(View view) {
@@ -174,17 +177,14 @@ public class HomeFragment extends Fragment {
         listSinMembresia     = view.findViewById(R.id.listSinMembresia);
         bannerSinMembresia   = view.findViewById(R.id.bannerSinMembresia);
 
-        tvNombreAdmin        = view.findViewById(R.id.tvNombreAdmin);
-        tvDireccionAdmin     = view.findViewById(R.id.tvDireccionAdmin);
-        tvTelefonoAdmin      = view.findViewById(R.id.tvTelefonoAdmin);
-
-        tvNombrePro          = view.findViewById(R.id.tvNombrePro);
-        tvDireccionPro       = view.findViewById(R.id.tvDireccionPro);
-        tvTelefonoPro        = view.findViewById(R.id.tvTelefonoPro);
-
         btnCrearCentro       = view.findViewById(R.id.btnCrearCentro);
-        btnEditarCentro      = view.findViewById(R.id.btnEditarCentro);
-        btnEliminarCentro    = view.findViewById(R.id.btnEliminarCentro);
+
+        /*
+         * Estos dos botones no existen en fragment_home.xml: viven en item_centro_card.xml.
+         * Se asignan desde inflarCardCentro() al inflar la card del Administrador.
+         */
+        btnEditarCentro   = null;
+        btnEliminarCentro = null;
     }
 
     /**
@@ -224,7 +224,7 @@ public class HomeFragment extends Fragment {
 
     /**
      * Carga el centro deportivo del administrador autenticado.
-     * Si existe, muestra la card con sus datos y los botones de editar y eliminar.
+     * Si existe, infla item_centro_card con botones Editar y Eliminar visibles.
      * Si no existe, muestra el div informativo con el botón de crear.
      * Replica el bloque esAdministrador del Home de Angular.
      */
@@ -236,16 +236,10 @@ public class HomeFragment extends Fragment {
                 sectionAdmin.setVisibility(View.VISIBLE);
 
                 if (centro != null) {
-                    /*Tenemos centro: mostramos la card y ocultamos el div vacío*/
+                    /*Tenemos centro: inflamos la card compartida con botones y ocultamos el div vacío*/
                     cardCentroAdmin.setVisibility(View.VISIBLE);
                     divSinCentroAdmin.setVisibility(View.GONE);
                     rellenarDatosCentroAdmin(centro);
-
-                    /*Editar: abrimos el fragment en modo edición*/
-                    btnEditarCentro.setOnClickListener(v -> abrirAddSportCentre(true));
-
-                    /*Eliminar: mostramos confirmación antes de borrar*/
-                    btnEliminarCentro.setOnClickListener(v -> confirmarEliminacion(centro));
 
                 } else {
                     /*Sin centro: mostramos el div informativo con el botón de crear*/
@@ -263,7 +257,8 @@ public class HomeFragment extends Fragment {
 
     /**
      * Carga el centro deportivo donde trabaja el profesional autenticado.
-     * Si tiene centroId asignado, muestra los datos. Si no, muestra el div de vinculación pendiente.
+     * Si tiene centroId asignado, infla item_centro_card sin botones.
+     * Si no, muestra el div de vinculación pendiente.
      * Replica el bloque esProfesional del Home de Angular.
      */
     private void cargarDatosPro() {
@@ -274,7 +269,7 @@ public class HomeFragment extends Fragment {
                 sectionPro.setVisibility(View.VISIBLE);
 
                 if (centro != null) {
-                    /*Tiene centro asignado: mostramos la card*/
+                    /*Tiene centro asignado: inflamos la card compartida sin botones*/
                     cardCentroPro.setVisibility(View.VISIBLE);
                     divSinCentroPro.setVisibility(View.GONE);
                     rellenarDatosCentroPro(centro);
@@ -367,27 +362,113 @@ public class HomeFragment extends Fragment {
     }
 
     /**
-     * Rellena los TextViews de la card del centro del administrador.
+     * Delega en inflarCardCentro() para construir la card del Administrador.
+     * Pasa mostrarBotones=true para que aparezcan Editar y Eliminar.
      * @param centro Centro deportivo encontrado en Firebase
      */
     private void rellenarDatosCentroAdmin(SportCentre centro) {
-        tvNombreAdmin.setText(centro.getNombre());
-        tvDireccionAdmin.setText(centro.getDireccion());
-        tvTelefonoAdmin.setText(centro.getTelefono() != null
-                ? centro.getTelefono()
-                : "Teléfono no disponible");
+        inflarCardCentro(
+                cardCentroAdmin,
+                centro,
+                "🏢 Mi centro deportivo",
+                true   /*Admin: mostramos botones Editar y Eliminar*/
+        );
     }
 
     /**
-     * Rellena los TextViews de la card del centro del profesional.
+     * Delega en inflarCardCentro() para construir la card del Profesional.
+     * Pasa mostrarBotones=false para que no aparezcan acciones de gestión.
      * @param centro Centro deportivo encontrado en Firebase
      */
     private void rellenarDatosCentroPro(SportCentre centro) {
-        tvNombrePro.setText(centro.getNombre());
-        tvDireccionPro.setText(centro.getDireccion());
-        tvTelefonoPro.setText(centro.getTelefono() != null
+        inflarCardCentro(
+                cardCentroPro,
+                centro,
+                "💼 Mi centro de trabajo",
+                false  /*Pro: solo datos, sin botones*/
+        );
+    }
+
+    /**
+     * Infla item_centro_card.xml dentro del parent indicado, rellena los datos
+     * comunes y carga la foto del centro con Glide.
+     * Si el campo foto está vacío o la URL falla, muestra error_default.png.
+     * Cuando mostrarBotones=true, hace visible layoutBotonesCentro y reasigna
+     * btnEditarCentro y btnEliminarCentro para que los métodos de gestión sigan
+     * apuntando a la instancia activa de la card.
+     * Método reutilizable entre Admin y Pro: replica el patrón de componente
+     * compartido de Angular adaptado a la vista dinámica de Android.
+     * @param parent         ViewGroup donde se añadirá la card inflada
+     * @param centro         Centro deportivo cuyos datos se van a mostrar
+     * @param labelRol       Texto del label superior según el rol del usuario
+     * @param mostrarBotones true → muestra Editar/Eliminar (solo Administrador)
+     */
+    private void inflarCardCentro(LinearLayout parent,
+                                  SportCentre centro,
+                                  String labelRol,
+                                  boolean mostrarBotones) {
+
+        /*Limpiamos el contenedor antes de inflar para evitar duplicados*/
+        parent.removeAllViews();
+
+        View card = LayoutInflater.from(getContext())
+                .inflate(R.layout.item_centro_card, parent, false);
+
+        /*Referencias a las vistas de la card*/
+        ImageView    ivFoto          = card.findViewById(R.id.ivFotoCentro);
+        TextView     tvLabel         = card.findViewById(R.id.tvLabelRol);
+        TextView     tvNombre        = card.findViewById(R.id.tvNombreCentroCard);
+        TextView     tvDireccion     = card.findViewById(R.id.tvDireccionCentroCard);
+        TextView     tvTelefono      = card.findViewById(R.id.tvTelefonoCentroCard);
+        LinearLayout layoutBotones   = card.findViewById(R.id.layoutBotonesCentro);
+        Button       btnEditarCard   = card.findViewById(R.id.btnEditarCentroCard);
+        Button       btnEliminarCard = card.findViewById(R.id.btnEliminarCentroCard);
+
+        /*Rellenamos los datos del centro*/
+        tvLabel.setText(labelRol);
+        tvNombre.setText(centro.getNombre());
+        tvDireccion.setText(centro.getDireccion());
+        tvTelefono.setText(centro.getTelefono() != null
                 ? centro.getTelefono()
                 : "Teléfono no disponible");
+
+        /*
+         * Cargamos la foto del centro con Glide.
+         * Si el campo foto está vacío o es nulo, mostramos directamente error_default.
+         * Si la URL existe pero falla la descarga, Glide la sustituye por error_default.
+         */
+        String fotoUrl = centro.getFoto();
+        if (fotoUrl != null && !fotoUrl.isEmpty()) {
+            Glide.with(this)
+                    .load(fotoUrl)
+                    .centerCrop()
+                    .placeholder(R.drawable.error_default)
+                    .error(R.drawable.error_default)
+                    .into(ivFoto);
+        } else {
+            ivFoto.setImageResource(R.drawable.error_default);
+        }
+
+        /*
+         * Botones: solo visibles para el Administrador.
+         * Los reasignamos en los campos del fragment para que confirmarEliminacion()
+         * y eliminarCentro() sigan funcionando sin modificaciones.
+         */
+        if (mostrarBotones) {
+            layoutBotones.setVisibility(View.VISIBLE);
+
+            /*Reasignamos las referencias globales a los botones activos de la card*/
+            btnEditarCentro   = btnEditarCard;
+            btnEliminarCentro = btnEliminarCard;
+
+            /*Editar: abrimos el fragment en modo edición*/
+            btnEditarCard.setOnClickListener(v -> abrirAddSportCentre(true));
+
+            /*Eliminar: mostramos confirmación antes de borrar*/
+            btnEliminarCard.setOnClickListener(v -> confirmarEliminacion(centro));
+        }
+
+        parent.addView(card);
     }
 
     /**
