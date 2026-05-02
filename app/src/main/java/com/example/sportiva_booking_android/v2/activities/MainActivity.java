@@ -24,6 +24,7 @@ import androidx.fragment.app.FragmentManager;
 import com.example.sportiva_booking_android.R;
 import com.example.sportiva_booking_android.v2.enums.Rol;
 import com.example.sportiva_booking_android.v2.fragments.AdminListFragment;
+import com.example.sportiva_booking_android.v2.fragments.ClientListFragment;
 import com.example.sportiva_booking_android.v2.fragments.HomeFragment;
 import com.example.sportiva_booking_android.v2.fragments.ProfesionalListFragment;
 import com.example.sportiva_booking_android.v2.fragments.ProfileFragment;
@@ -232,9 +233,16 @@ public class MainActivity extends AppCompatActivity {
             /*ADMIN: lista de profesionales vinculados a tu centro deportivo*/
             if (item.getItemId() == R.id.nav_adm_2) {
                 navegarAFragment(ProfesionalListFragment.newInstance(userRol));
+                return true;
             }
 
-            return true;
+            /*ADMIN: Gestión de los Clientes con una membresía activa dentro de su centro deportivo*/
+            if (item.getItemId() == R.id.nav_adm_3) {
+                navegarAFragment(ClientListFragment.newInstance(userRol));
+                return true;
+            }
+
+            return false;
         });
     }
 

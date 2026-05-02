@@ -29,6 +29,7 @@
     <group android:id="@+id/group_admin" android:visible="false">
         <item android:id="@+id/nav_adm_1" android:title="Alta de Profesionales" android:icon="@android:drawable/ic_menu_manage" />
         <item android:id="@+id/nav_adm_2" android:title="Lista de Profesionales" android:icon="@android:drawable/ic_menu_set_as" />
+        <item android:id="@+id/nav_adm_3" android:title="Gestión de Clientes" android:icon="@android:drawable/sym_contact_card" />
     </group>
 
     <group android:id="@+id/group_root" android:visible="false">
