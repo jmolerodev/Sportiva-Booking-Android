@@ -24,7 +24,10 @@ import com.example.sportiva_booking_android.v2.services.SportCentreService;
 import com.google.android.material.snackbar.Snackbar;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
+import com.google.firebase.FirebaseApp;
+import com.google.firebase.FirebaseOptions;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseAuthException;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
@@ -33,6 +36,10 @@ public class UserManagementFragment extends Fragment {
 
     /*Clave del Bundle para recibir el rol desde MainActivity*/
     private static final String ARG_ROL = "ROL";
+
+    /*Nombre de la instancia secundaria de FirebaseApp usada exclusivamente para crear cuentas
+      sin alterar la sesión activa del usuario logueado*/
+    private static final String FIREBASE_APP_SECUNDARIA = "auth_secundario";
 
     /*Componentes de la vista — layouts de estado (loading, sin centro, formulario)*/
     private View layoutLoading;
@@ -51,8 +58,14 @@ public class UserManagementFragment extends Fragment {
     private View seccionProfesional;
     private Button btnConfirmar, btnCancelar, btnVolveraHomeUM;
 
-    /*Firebase*/
+    /*Firebase — instancia principal que mantiene la sesión del usuario logueado*/
     private FirebaseAuth firebaseAuth;
+
+    /*Firebase — instancia secundaria usada únicamente para crear nuevas cuentas.
+      Al operar sobre una FirebaseApp distinta, el SDK no toca la sesión principal
+      y el usuario logueado permanece inalterado durante el proceso de alta*/
+    private FirebaseAuth firebaseAuthSecundario;
+
     private DatabaseReference personsRef;
 
     /*Servicios*/
@@ -97,6 +110,9 @@ public class UserManagementFragment extends Fragment {
         personsRef = FirebaseDatabase.getInstance().getReference("Persons");
         sportCentreService = new SportCentreService();
 
+        /*Inicializamos la instancia secundaria de Firebase para crear cuentas sin cambiar sesión*/
+        inicializarFirebaseSecundario();
+
         inicializarVistas(view);
         configurarSegunRol();
 
@@ -111,6 +127,26 @@ public class UserManagementFragment extends Fragment {
         btnConfirmar.setOnClickListener(v -> crearUsuario());
         btnCancelar.setOnClickListener(v -> volverAtras());
         btnVolveraHomeUM.setOnClickListener(v -> finalizarYNavegarAlHome());
+    }
+
+    /**
+     * Inicializa la instancia secundaria de FirebaseApp usada para crear cuentas.
+     * Si ya existe de una navegación anterior al fragment, la reutilizamos
+     * en lugar de inicializarla de nuevo para evitar IllegalStateException.
+     */
+    private void inicializarFirebaseSecundario() {
+        FirebaseApp appSecundaria;
+        try {
+            appSecundaria = FirebaseApp.initializeApp(
+                    requireContext(),
+                    FirebaseApp.getInstance().getOptions(),
+                    FIREBASE_APP_SECUNDARIA
+            );
+        } catch (IllegalStateException e) {
+            /*La app secundaria ya fue inicializada en una sesión anterior — la reutilizamos*/
+            appSecundaria = FirebaseApp.getInstance(FIREBASE_APP_SECUNDARIA);
+        }
+        firebaseAuthSecundario = FirebaseAuth.getInstance(appSecundaria);
     }
 
     /**
@@ -281,10 +317,17 @@ public class UserManagementFragment extends Fragment {
                 ? firebaseAuth.getCurrentUser().getUid()
                 : null;
 
-        firebaseAuth.createUserWithEmailAndPassword(email, password)
+        /*Usamos la instancia secundaria para que el SDK no cambie la sesión activa al crear
+          la nueva cuenta — firebaseAuth (instancia principal) permanece inalterada*/
+        firebaseAuthSecundario.createUserWithEmailAndPassword(email, password)
                 .addOnCompleteListener(task -> {
                     if (task.isSuccessful()) {
-                        String uid = firebaseAuth.getCurrentUser().getUid();
+                        /*Obtenemos el UID del recién creado desde la instancia secundaria*/
+                        String uid = firebaseAuthSecundario.getCurrentUser().getUid();
+
+                        /*Cerramos la sesión de la cuenta recién creada en la instancia secundaria
+                          para mantenerla limpia de cara a futuros altas en la misma sesión*/
+                        firebaseAuthSecundario.signOut();
 
                         if (rolUsuarioLogueado == Rol.ROOT) {
                             guardarAdministrador(uid, nombre, apellidos);
@@ -442,13 +485,25 @@ public class UserManagementFragment extends Fragment {
     private void gestionarErrorFirebase(Exception exception) {
         String mensaje = "Error en el registro. Inténtalo de nuevo";
 
-        if (exception != null && exception.getMessage() != null) {
-            if (exception.getMessage().contains("email-already-in-use")) {
-                tilEmail.setError("El correo electrónico ya está registrado");
-                mensaje = "El correo electrónico ya está registrado. Prueba con una dirección diferente";
-            } else if (exception.getMessage().contains("invalid-email")) {
-                tilEmail.setError("El correo electrónico no es válido");
-                mensaje = "El correo electrónico no es válido";
+        if (exception instanceof FirebaseAuthException) {
+            FirebaseAuthException authEx = (FirebaseAuthException) exception;
+            String codigo = authEx.getErrorCode();
+
+            switch (codigo) {
+                case "ERROR_EMAIL_ALREADY_IN_USE":
+                    tilEmail.setError("El correo electrónico ya está registrado");
+                    mensaje = "El correo electrónico ya está registrado. Prueba con una dirección diferente";
+                    break;
+                case "ERROR_INVALID_EMAIL":
+                    tilEmail.setError("El correo electrónico no es válido");
+                    mensaje = "El correo electrónico no es válido";
+                    break;
+
+                default:
+                /*Fallback con el código técnico por si aparece alguno no contemplado —
+                  útil para detectar casos nuevos durante el desarrollo*/
+                    mensaje = "Error en el registro (" + codigo + "). Inténtalo de nuevo";
+                    break;
             }
         }
 
