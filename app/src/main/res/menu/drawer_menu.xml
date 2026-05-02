@@ -23,7 +23,7 @@
 
     <group android:id="@+id/group_pro" android:visible="false">
         <item android:id="@+id/nav_pro_1" android:title="Tu Contenido Multimedia" android:icon="@android:drawable/ic_media_play" />
-        <item android:id="@+id/nav_pro_2" android:title="Opcion Profesional 2" android:icon="@android:drawable/ic_menu_edit" />
+        <item android:id="@+id/nav_pro_2" android:title="Mis Sesiones" android:icon="@android:drawable/ic_menu_edit" />
     </group>
 
     <group android:id="@+id/group_admin" android:visible="false">
