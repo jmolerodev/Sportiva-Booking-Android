@@ -1,5 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.cardview.widget.CardView
+<!--
+    Item de slot horario del profesional.
+    Cambios respecto a la versión anterior:
+      1. Se elimina la dependencia de FlexboxLayout. La fila de badges (tipo + modalidad
+         + aforo) pasa a LinearLayout vertical para que cada badge ocupe su propio
+         renglón sin restricción de ancho — ninguna palabra se trunca.
+      2. Se añade borde stroke negro usando MaterialCardView en lugar de CardView estándar.
+-->
+<com.google.android.material.card.MaterialCardView
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
@@ -7,7 +15,9 @@
     android:layout_marginBottom="8dp"
     app:cardCornerRadius="12dp"
     app:cardElevation="4dp"
-    app:cardBackgroundColor="@color/white">
+    app:cardBackgroundColor="@color/white"
+    app:strokeColor="@color/black"
+    app:strokeWidth="1dp">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -45,6 +55,7 @@
                 android:textStyle="bold"
                 android:textColor="@color/white"
                 android:background="@drawable/badge_background"
+                android:maxLines="1"
                 android:visibility="gone" />
 
             <!-- Título de la sesión propia -->
@@ -57,11 +68,14 @@
                 android:textStyle="bold"
                 android:visibility="gone" />
 
-            <!-- Fila de badges: tipo + modalidad + aforo -->
+            <!--
+                Badges en orientación VERTICAL: tipo, modalidad y aforo en renglones
+                separados — sin dependencia externa y sin truncado de texto.
+            -->
             <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal"
+                android:orientation="vertical"
                 android:layout_marginTop="4dp">
 
                 <TextView
@@ -74,7 +88,8 @@
                     android:textStyle="bold"
                     android:textColor="@color/white"
                     android:background="@drawable/badge_background"
-                    android:layout_marginEnd="6dp"
+                    android:maxLines="1"
+                    android:layout_marginBottom="4dp"
                     android:visibility="gone" />
 
                 <TextView
@@ -87,7 +102,8 @@
                     android:textStyle="bold"
                     android:textColor="@color/white"
                     android:background="@drawable/badge_background"
-                    android:layout_marginEnd="6dp"
+                    android:maxLines="1"
+                    android:layout_marginBottom="4dp"
                     android:visibility="gone" />
 
                 <TextView
@@ -100,6 +116,7 @@
                     android:textStyle="bold"
                     android:textColor="@color/white"
                     android:background="@drawable/badge_background"
+                    android:maxLines="1"
                     android:visibility="gone" />
 
             </LinearLayout>
@@ -119,4 +136,4 @@
 
     </LinearLayout>
 
-</androidx.cardview.widget.CardView>
+</com.google.android.material.card.MaterialCardView>

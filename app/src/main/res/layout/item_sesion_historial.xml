@@ -1,5 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.cardview.widget.CardView
+<!--
+    Item del historial de sesiones.
+    Estructura en DOS FILAS para que los badges nunca queden sin espacio:
+      Fila 1 — fecha (izquierda) · badge estado (derecha)
+      Fila 2 — horario · título · badges tipo + modalidad
+    Con esta distribución los badges de tipo/modalidad tienen todo el ancho
+    disponible de la card y nunca se truncan.
+    MaterialCardView para el stroke negro.
+-->
+<com.google.android.material.card.MaterialCardView
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
@@ -7,62 +16,85 @@
     android:layout_marginBottom="8dp"
     app:cardCornerRadius="12dp"
     app:cardElevation="4dp"
-    app:cardBackgroundColor="@color/white">
+    app:cardBackgroundColor="@color/white"
+    app:strokeColor="@color/black"
+    app:strokeWidth="1dp">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:padding="14dp"
-        android:gravity="center_vertical">
+        android:orientation="vertical"
+        android:padding="14dp">
 
-        <!-- Bloque izquierdo: fecha + horario -->
+        <!-- ── Fila 1: fecha + badge estado ──────────────────────────── -->
         <LinearLayout
-            android:layout_width="wrap_content"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:minWidth="110dp">
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginBottom="6dp">
 
+            <!-- Fecha -->
             <TextView
                 android:id="@+id/tvHistorialFecha"
-                android:layout_width="wrap_content"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
+                android:layout_weight="1"
                 android:textColor="@color/background"
                 android:textSize="12sp"
                 android:textStyle="bold" />
 
+            <!-- Badge CANCELADA / FINALIZADA -->
+            <TextView
+                android:id="@+id/tvHistorialEstadoBadge"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:paddingHorizontal="10dp"
+                android:paddingVertical="4dp"
+                android:textSize="11sp"
+                android:textStyle="bold"
+                android:textColor="@color/white"
+                android:background="@drawable/badge_background" />
+
+        </LinearLayout>
+
+        <!-- ── Fila 2: horario + título + badges tipo/modalidad ───────── -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+
+            <!-- Horario -->
             <TextView
                 android:id="@+id/tvHistorialHorario"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:textColor="@color/black"
                 android:textSize="13sp"
-                android:layout_marginTop="2dp" />
+                android:minWidth="90dp" />
 
-        </LinearLayout>
-
-        <!-- Bloque central: título + tipo + modalidad -->
-        <LinearLayout
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:orientation="vertical"
-            android:layout_marginStart="12dp">
-
-            <TextView
-                android:id="@+id/tvHistorialTitulo"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:textColor="@color/black"
-                android:textSize="14sp"
-                android:textStyle="bold" />
-
+            <!-- Título + badges en columna — espacio libre sin restricción de weight -->
             <LinearLayout
-                android:layout_width="wrap_content"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:layout_marginTop="4dp">
+                android:layout_weight="1"
+                android:orientation="vertical"
+                android:layout_marginStart="8dp">
 
+                <TextView
+                    android:id="@+id/tvHistorialTitulo"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textColor="@color/black"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    android:layout_marginBottom="4dp" />
+
+                <!--
+                    Badges en columna: cada uno en su propio renglón.
+                    Al no tener maxLines ni ellipsize, el texto se muestra completo.
+                -->
                 <TextView
                     android:id="@+id/tvHistorialTipo"
                     android:layout_width="wrap_content"
@@ -73,7 +105,7 @@
                     android:textStyle="bold"
                     android:textColor="@color/white"
                     android:background="@drawable/badge_background"
-                    android:layout_marginEnd="6dp" />
+                    android:layout_marginBottom="4dp" />
 
                 <TextView
                     android:id="@+id/tvHistorialModalidad"
@@ -88,32 +120,12 @@
 
             </LinearLayout>
 
-        </LinearLayout>
-
-        <!-- Bloque derecho: badge estado + botón eliminar -->
-        <LinearLayout
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:gravity="center"
-            android:layout_marginStart="8dp">
-
-            <TextView
-                android:id="@+id/tvHistorialEstadoBadge"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:paddingHorizontal="10dp"
-                android:paddingVertical="4dp"
-                android:textSize="11sp"
-                android:textStyle="bold"
-                android:textColor="@color/white"
-                android:background="@drawable/badge_background"
-                android:layout_marginBottom="8dp" />
-
+            <!-- Botón eliminar -->
             <ImageButton
                 android:id="@+id/btnHistorialEliminar"
                 android:layout_width="36dp"
                 android:layout_height="36dp"
+                android:layout_marginStart="8dp"
                 android:background="?attr/selectableItemBackgroundBorderless"
                 android:src="@drawable/ic_close"
                 android:contentDescription="Eliminar registro"
@@ -123,4 +135,4 @@
 
     </LinearLayout>
 
-</androidx.cardview.widget.CardView>
+</com.google.android.material.card.MaterialCardView>

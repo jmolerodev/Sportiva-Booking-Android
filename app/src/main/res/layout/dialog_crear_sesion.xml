@@ -89,21 +89,34 @@
             android:layout_height="wrap_content"
             android:layout_marginBottom="12dp" />
 
-        <!-- Aforo máximo (solo visible para GRUPAL — se controla desde el fragment) -->
-        <com.google.android.material.textfield.TextInputLayout
+        <!--
+            Contenedor del campo aforo: se envuelve en un LinearLayout con id propio
+            para poder ocultarlo completamente (label + input) cuando la modalidad
+            es INDIVIDUAL, ya que en ese caso el aforo queda fijado a 1 desde el fragment.
+        -->
+        <LinearLayout
+            android:id="@+id/layoutDialogAforo"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="Aforo máximo"
-            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+            android:orientation="vertical"
+            android:visibility="visible">
 
-            <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/etDialogAforoMax"
+            <com.google.android.material.textfield.TextInputLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:inputType="number"
-                android:text="2" />
+                android:hint="Aforo máximo"
+                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
 
-        </com.google.android.material.textfield.TextInputLayout>
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/etDialogAforoMax"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="number"
+                    android:text="2" />
+
+            </com.google.android.material.textfield.TextInputLayout>
+
+        </LinearLayout>
 
     </LinearLayout>
 
