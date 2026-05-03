@@ -17,7 +17,7 @@ public class MembershipService {
     private static final String COLLECTION_NAME = "Memberships";
 
     /*Referencia al nodo Memberships de Firebase*/
-    private final DatabaseReference databaseReference;
+    public DatabaseReference databaseReference;
 
     /*Constructor del Servicio*/
     public MembershipService() {
@@ -25,8 +25,7 @@ public class MembershipService {
     }
 
     /**
-     * Obtiene todas las membresías de un cliente concreto.
-     * Replica el getMembresiasByCliente() de Angular filtrando por clienteId.
+     * Obtiene todas las membresías de un cliente concreto filtrando por su UID
      *
      * @param clienteId UID del cliente autenticado
      * @param callback  Callback que devuelve la lista de membresías del cliente
@@ -57,22 +56,44 @@ public class MembershipService {
     }
 
     /**
-     * Interfaz con la que manejaremos una lista de membersias.
+     * Obtiene todas las membresías activas y vigentes de un centro deportivo concreto.
+     * Filtramos por centroId, estado ACTIVA y que la fecha de fin no haya expirado
+     *
+     * @param centroId UID del centro deportivo
+     * @param callback Callback que devuelve la lista de membresías activas del centro
      */
-    public interface MembershipListCallback {
-        void onResult(List<Membership> membresias);
-    }
+    public void getMembresiasByCentro(String centroId, MembershipListCallback callback) {
+        databaseReference.addListenerForSingleValueEvent(new ValueEventListener() {
 
-    /**
-     * Contrato de retorno para operaciones que devuelven una única membresía o null.
-     */
-    public interface MembershipCallback {
-        void onResult(Membership membresia);
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                List<Membership> result = new ArrayList<>();
+                long ahora = System.currentTimeMillis();
+
+                for (DataSnapshot child : snapshot.getChildren()) {
+                    Membership m = child.getValue(Membership.class);
+                    /*Nos quedamos solo con las que pertenecen al centro, están activas y no han expirado*/
+                    if (m != null
+                            && centroId.equals(m.getCentroId())
+                            && "ACTIVA".equals(m.getEstado())
+                            && m.getFechaFin() > ahora) {
+                        m.setId(child.getKey());
+                        result.add(m);
+                    }
+                }
+                callback.onResult(result);
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) {
+                callback.onResult(new ArrayList<>());
+            }
+        });
     }
 
     /**
      * Verifica si un cliente tiene una membresía activa y vigente en un centro concreto.
-     * Comprueba tanto el estado ACTIVA como que la fecha de fin no haya expirado.
+     * Comprueba tanto el estado ACTIVA como que la fecha de fin no haya expirado
      *
      * @param clienteId UID del cliente autenticado
      * @param centroId  UID del centro deportivo a verificar
@@ -99,7 +120,7 @@ public class MembershipService {
                         return;
                     }
                 }
-                /* No se encontró membresía activa y vigente para este cliente y centro */
+                /*No se encontró membresía activa y vigente para este cliente y centro*/
                 callback.onResult(null);
             }
 
@@ -111,16 +132,8 @@ public class MembershipService {
     }
 
     /**
-     * Contrato de retorno para operaciones de escritura simples.
-     */
-    public interface WriteCallback {
-        void onExito();
-        void onError(String mensaje);
-    }
-
-    /**
      * Persiste una nueva membresía en Firebase generando un ID automático con push().
-     * Se invoca desde MembershipPaymentFragment tras la confirmación del pago por PayPal.
+     * Se invoca desde MembershipPaymentFragment tras la confirmación del pago por PayPal
      *
      * @param membresia Objeto Membership completo listo para persistir
      * @param callback  Retorno de éxito o error
@@ -131,4 +144,25 @@ public class MembershipService {
                 .addOnFailureListener(e -> callback.onError(e.getMessage()));
     }
 
+    /**
+     * Interfaz con la que manejaremos una lista de membresías
+     */
+    public interface MembershipListCallback {
+        void onResult(List<Membership> membresias);
+    }
+
+    /**
+     * Contrato de retorno para operaciones que devuelven una única membresía o null
+     */
+    public interface MembershipCallback {
+        void onResult(Membership membresia);
+    }
+
+    /**
+     * Contrato de retorno para operaciones de escritura simples
+     */
+    public interface WriteCallback {
+        void onExito();
+        void onError(String mensaje);
+    }
 }

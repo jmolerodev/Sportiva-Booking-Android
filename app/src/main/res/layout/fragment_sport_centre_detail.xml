@@ -53,32 +53,11 @@
                 android:paddingBottom="24dp"
                 android:paddingHorizontal="24dp">
 
-                <!-- Botón volver -->
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:layout_marginBottom="16dp">
-
-                    <Button
-                        android:id="@+id/btnVolverDetalle"
-                        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-                        android:layout_width="wrap_content"
-                        android:layout_height="36dp"
-                        android:paddingHorizontal="16dp"
-                        android:text="← Volver"
-                        android:textColor="@color/white"
-                        android:textSize="12sp"
-                        app:cornerRadius="18dp"
-                        app:strokeColor="@color/white" />
-
-                </LinearLayout>
-
                 <ImageView
                     android:id="@+id/ivFotoCentroDetalle"
                     android:layout_width="120dp"
                     android:layout_height="120dp"
-                    android:scaleType="centerCrop"
+                    android:scaleType="fitCenter"
                     android:src="@drawable/error_default" />
 
                 <TextView
@@ -86,7 +65,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="16dp"
-                    android:textColor="@color/white"
+                    android:textColor="@color/text"
                     android:textSize="22sp"
                     android:textStyle="bold" />
 
@@ -95,7 +74,8 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="4dp"
-                    android:textColor="#BDFFFFFF"
+                    android:textStyle="bold"
+                    android:textColor="@color/text"
                     android:textSize="13sp" />
 
                 <TextView
@@ -103,14 +83,13 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="2dp"
-                    android:textColor="#BDFFFFFF"
+                    android:textStyle="bold"
+                    android:textColor="@color/text"
                     android:textSize="13sp" />
 
             </LinearLayout>
 
-            <!-- ══════════════════════════════════════════════ -->
-            <!-- SECCIÓN: SIN MEMBRESÍA                        -->
-            <!-- ══════════════════════════════════════════════ -->
+            <!-- SECCIÓN: SIN MEMBRESÍA -->
             <LinearLayout
                 android:id="@+id/sectionSinMembresia"
                 android:layout_width="match_parent"
@@ -170,9 +149,7 @@
 
             </LinearLayout>
 
-            <!-- ══════════════════════════════════════════════ -->
-            <!-- SECCIÓN: CON MEMBRESÍA                        -->
-            <!-- ══════════════════════════════════════════════ -->
+            <!-- SECCIÓN: CON MEMBRESÍA -->
             <LinearLayout
                 android:id="@+id/sectionConMembresia"
                 android:layout_width="match_parent"
@@ -180,7 +157,7 @@
                 android:orientation="vertical"
                 android:visibility="gone">
 
-                <!-- ── Calendario ── -->
+                <!-- Calendario -->
                 <androidx.cardview.widget.CardView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -200,12 +177,11 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_marginBottom="16dp"
-                            android:text="📅 Calendario de sesiones"
+                            android:text="Calendario de sesiones"
                             android:textColor="@color/black"
                             android:textSize="16sp"
                             android:textStyle="bold" />
 
-                        <!-- Cabecera de navegación del mes -->
                         <LinearLayout
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
@@ -247,7 +223,6 @@
 
                         </LinearLayout>
 
-                        <!-- Cabecera días de la semana -->
                         <LinearLayout
                             android:id="@+id/layoutDiasSemana"
                             android:layout_width="match_parent"
@@ -255,14 +230,12 @@
                             android:orientation="horizontal"
                             android:layout_marginBottom="4dp"/>
 
-                        <!-- Cuadrícula del calendario (semanas inyectadas dinámicamente) -->
                         <LinearLayout
                             android:id="@+id/layoutCalendario"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:orientation="vertical" />
 
-                        <!-- Slots del día seleccionado -->
                         <TextView
                             android:id="@+id/tvTituloSlots"
                             android:layout_width="wrap_content"
@@ -280,7 +253,6 @@
                             android:layout_height="wrap_content"
                             android:orientation="vertical" />
 
-                        <!-- Panel de detalle de sesión seleccionada -->
                         <androidx.cardview.widget.CardView
                             android:id="@+id/cardDetalleSesion"
                             android:layout_width="match_parent"
@@ -329,7 +301,6 @@
                                     android:textColor="#555555"
                                     android:textSize="13sp" />
 
-                                <!-- Badge aforo completo -->
                                 <TextView
                                     android:id="@+id/tvAforoCompleto"
                                     android:layout_width="wrap_content"
@@ -396,7 +367,7 @@
 
                 </androidx.cardview.widget.CardView>
 
-                <!-- ── Soporte ── -->
+                <!-- Soporte -->
                 <androidx.cardview.widget.CardView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -416,12 +387,11 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_marginBottom="12dp"
-                            android:text="💬 Soporte"
+                            android:text="Soporte"
                             android:textColor="@color/black"
                             android:textSize="16sp"
                             android:textStyle="bold" />
 
-                        <!-- Estado: sin chat abierto → formulario de solicitud -->
                         <LinearLayout
                             android:id="@+id/layoutSolicitudChat"
                             android:layout_width="match_parent"
@@ -434,7 +404,8 @@
                                 android:layout_height="wrap_content"
                                 android:layout_marginBottom="10dp"
                                 android:text="¿Necesitas ayuda? Envía tu consulta al administrador del centro."
-                                android:textColor="#666666"
+                                android:textColor="@color/black"
+                                android:textStyle="bold"
                                 android:textSize="13sp" />
 
                             <com.google.android.material.textfield.TextInputLayout
@@ -477,7 +448,6 @@
 
                         </LinearLayout>
 
-                        <!-- Estado: chat PENDIENTE -->
                         <LinearLayout
                             android:id="@+id/layoutChatPendiente"
                             android:layout_width="match_parent"
@@ -507,7 +477,6 @@
 
                         </LinearLayout>
 
-                        <!-- Estado: chat ACTIVO → botón ir al chat -->
                         <LinearLayout
                             android:id="@+id/layoutChatActivo"
                             android:layout_width="match_parent"
@@ -536,7 +505,6 @@
 
                         </LinearLayout>
 
-                        <!-- Estado: chat CERRADO -->
                         <LinearLayout
                             android:id="@+id/layoutChatCerrado"
                             android:layout_width="match_parent"
@@ -572,7 +540,7 @@
 
                 </androidx.cardview.widget.CardView>
 
-                <!-- ── Multimedia ── -->
+                <!-- Multimedia -->
                 <androidx.cardview.widget.CardView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -592,12 +560,11 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_marginBottom="12dp"
-                            android:text="🎬 Multimedia del centro"
+                            android:text="Multimedia del centro"
                             android:textColor="@color/black"
                             android:textSize="16sp"
                             android:textStyle="bold" />
 
-                        <!-- Sin vídeos -->
                         <TextView
                             android:id="@+id/tvSinVideos"
                             android:layout_width="wrap_content"
@@ -607,7 +574,6 @@
                             android:textSize="13sp"
                             android:visibility="gone" />
 
-                        <!-- Lista de vídeos inyectada dinámicamente -->
                         <LinearLayout
                             android:id="@+id/layoutVideos"
                             android:layout_width="match_parent"

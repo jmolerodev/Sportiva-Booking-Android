@@ -252,21 +252,13 @@ public class SportCentreDetailFragment extends Fragment {
      * Asigna los listeners a todos los botones del fragment.
      */
     private void configurarListeners() {
-        requireView().findViewById(R.id.btnVolverDetalle)
-                .setOnClickListener(v -> requireActivity()
-                        .getSupportFragmentManager().popBackStack());
 
         btnContratarMembresia.setOnClickListener(v -> abrirContratarMembresia());
         btnNuevaSolicitud.setOnClickListener(v -> mostrarEstadoSoporte(null));
-
         btnEnviarSolicitud.setOnClickListener(v -> solicitarChat());
-
         btnIrAlChat.setOnClickListener(v -> abrirSoporteCliente());
-
         btnCerrarDetalle.setOnClickListener(v -> cerrarDetalleSesion());
-
         btnReservar.setOnClickListener(v -> reservarSesion());
-
         btnCancelarReserva.setOnClickListener(v -> confirmarCancelarReserva());
 
         requireView().findViewById(R.id.btnMesAnterior)

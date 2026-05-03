@@ -19,51 +19,62 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.sportiva_booking_android.R;
+import com.example.sportiva_booking_android.v2.adapters.ClienteListAdapter;
 import com.example.sportiva_booking_android.v2.enums.Rol;
+import com.example.sportiva_booking_android.v2.models.Cliente;
+import com.example.sportiva_booking_android.v2.models.Membership;
+import com.example.sportiva_booking_android.v2.services.ClienteService;
+import com.example.sportiva_booking_android.v2.services.MembershipService;
 import com.google.android.material.snackbar.Snackbar;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 public class ClientListFragment extends Fragment {
 
     private static final String ARG_ROL = "ROL";
 
-    /* vistas — pantalla de carga global */
+    /*Vistas — pantalla de carga global*/
     private LinearLayout layoutCargando;
 
-    /* vistas — contenido real (oculto hasta que los datos estén listos) */
+    /*Vistas — contenido real, oculto hasta que los datos estén listos*/
     private ScrollView layoutContent;
 
-    /* vistas — card estado vacío */
+    /*Vistas — card informativo cuando no hay clientes vinculados*/
     private CardView layoutVacio;
 
-    /* vistas — card panel con la lista */
+    /*Vistas — card con el listado de clientes activos*/
     private CardView cardPanel;
 
-    /* vistas — RecyclerView de clientes */
+    /*Vistas — RecyclerView donde se mostrarán los clientes*/
     private RecyclerView rvClientes;
 
-    /* vistas — botón de vuelta al home */
+    /*Vistas — botón para volver al home*/
     private Button btnVolverHome;
 
-    /* firebase */
+    /*Instancia de FirebaseAuth para obtener el usuario autenticado*/
     private FirebaseAuth firebaseAuth;
 
-    /* TODO: inyectar ClienteService y MembershipService cuando estén listos */
+    /*Servicios necesarios para obtener los datos de membresías y clientes*/
+    private MembershipService membershipService;
+    private ClienteService clienteService;
 
-    /* lista en memoria de clientes cargados */
-    private final List<Object> clientes = new ArrayList<>();
+    /*Lista en memoria con los clientes que tienen membresía activa en el centro*/
+    private final List<Cliente> clientes = new ArrayList<>();
 
-    /* rol del usuario autenticado — necesario para regenerar el HomeFragment al volver */
+    /*Adaptador del RecyclerView*/
+    private ClienteListAdapter adapter;
+
+    /*Rol del usuario autenticado, necesario para regenerar el HomeFragment al volver*/
     private Rol rolUsuarioLogueado;
 
 
-
     /**
-     * Crea una nueva instancia del fragment pasando el rol por Bundle.
+     * Crea una nueva instancia del fragment pasando el rol por Bundle
      *
      * @param rol Rol del usuario autenticado
      * @return Instancia configurada del fragment
@@ -75,7 +86,6 @@ public class ClientListFragment extends Fragment {
         fragment.setArguments(args);
         return fragment;
     }
-
 
 
     @Nullable
@@ -93,6 +103,7 @@ public class ClientListFragment extends Fragment {
 
         recuperarRol();
         inicializarFirebase();
+        inicializarServicios();
         inicializarVistas(view);
         configurarListeners();
         inicializarCarga();
@@ -101,7 +112,7 @@ public class ClientListFragment extends Fragment {
 
     /**
      * Recupera el rol del Bundle de argumentos.
-     * Si no se encuentra o el valor no es válido usa ADMINISTRADOR como fallback.
+     * Si no se encuentra o el valor no es válido, usamos ADMINISTRADOR como fallback
      */
     private void recuperarRol() {
         if (getArguments() != null) {
@@ -118,47 +129,54 @@ public class ClientListFragment extends Fragment {
     }
 
     /**
-     * Inicializa las instancias de Firebase necesarias para la autenticación.
+     * Inicializa la instancia de FirebaseAuth para poder obtener el usuario activo
      */
     private void inicializarFirebase() {
         firebaseAuth = FirebaseAuth.getInstance();
     }
 
     /**
-     * Enlaza todas las vistas del layout y configura el RecyclerView.
-     * Arranca con la pantalla de carga visible y el contenido oculto.
+     * Instancia los servicios que necesitamos para cargar membresías y clientes
+     */
+    private void inicializarServicios() {
+        membershipService = new MembershipService();
+        clienteService = new ClienteService(requireContext());
+    }
+
+    /**
+     * Enlaza todas las vistas del layout con sus respectivos IDs,
+     * prepara el RecyclerView con su adaptador y arranca mostrando
+     * la pantalla de carga mientras los datos se obtienen de Firebase
      *
-     * @param view Vista raíz del fragment inflada en onCreateView
+     * @param view Vista raíz del fragment
      */
     private void inicializarVistas(View view) {
         layoutCargando = view.findViewById(R.id.layoutCargandoClientList);
-        layoutContent  = view.findViewById(R.id.layoutContentClientList);
-        layoutVacio    = view.findViewById(R.id.layoutVacioClientList);
-        cardPanel      = view.findViewById(R.id.cardPanelClientes);
-        rvClientes     = view.findViewById(R.id.rvClientes);
-        btnVolverHome  = view.findViewById(R.id.btnVolverHomeClientList);
+        layoutContent = view.findViewById(R.id.layoutContentClientList);
+        layoutVacio = view.findViewById(R.id.layoutVacioClientList);
+        cardPanel = view.findViewById(R.id.cardPanelClientes);
+        rvClientes = view.findViewById(R.id.rvClientes);
+        btnVolverHome = view.findViewById(R.id.btnVolverHomeClientList);
 
-        /* Cuando el adaptador esté listo, enlazarlo aquí igual que en ProfesionalListFragment */
+        adapter = new ClienteListAdapter(clientes, this::onDarDeBaja);
         rvClientes.setLayoutManager(new LinearLayoutManager(requireContext()));
+        rvClientes.setAdapter(adapter);
 
-        /* arrancamos con la pantalla de carga activa y el contenido oculto */
         layoutCargando.setVisibility(View.VISIBLE);
         layoutContent.setVisibility(View.GONE);
     }
 
     /**
-     * Asigna los listeners a todos los botones del fragment.
+     * Asigna los listeners a los botones del fragment
      */
     private void configurarListeners() {
         btnVolverHome.setOnClickListener(v -> navegarAlHome());
     }
 
 
-
     /**
-     * Inicializa la carga de datos comprobando que existe sesión activa en Firebase Auth.
-     * Cuando ClienteService y MembershipService estén implementados, la lógica real
-     * irá en {@link #cargarClientes(String)}.
+     * Punto de entrada de la carga de datos.
+     * Comprobamos que existe una sesión activa antes de lanzar las consultas
      */
     private void inicializarCarga() {
         FirebaseUser user = firebaseAuth.getCurrentUser();
@@ -172,22 +190,154 @@ public class ClientListFragment extends Fragment {
     }
 
     /**
-     * Obtiene la lista de clientes con membresía activa en el centro del administrador.
-     * TODO: implementar cuando ClienteService y MembershipService estén listos.
-     * @param adminUid UID del administrador propietario del centro
+     * Primer paso de la carga: obtenemos todas las membresías activas y vigentes
+     * que pertenecen al centro de este administrador.
+     * Con esa lista extraemos un Set con los IDs únicos de los clientes vinculados
+     * y se lo pasamos al segundo paso para cruzarlos con los datos de Persons
+     *
+     * @param adminUid UID del administrador, que coincide con el centroId en la Base de Datos
      */
     private void cargarClientes(String adminUid) {
-        /* --- PLACEHOLDER: simula respuesta vacía hasta integrar los servicios --- */
-        clientes.clear();
-        mostrarContenido();
-        actualizarEstadoVista();
+        membershipService.getMembresiasByCentro(adminUid,
+                membresias -> {
+                    if (!isAdded()) return;
+
+                    /*Recorremos las membresías y guardamos los IDs de cliente en un Set
+                      para evitar duplicados en caso de que un cliente tuviera varias*/
+                    Set<String> uidsConMembresia = new HashSet<>();
+                    for (Membership m : membresias) {
+                        if (m.getClienteId() != null) {
+                            uidsConMembresia.add(m.getClienteId());
+                        }
+                    }
+
+                    /*Con el Set listo pasamos al segundo paso*/
+                    cargarYFiltrarClientes(uidsConMembresia);
+                });
+    }
+
+    /**
+     * Segundo paso de la carga: obtenemos todos los usuarios con rol CLIENTE
+     * y nos quedamos únicamente con los que están dentro del Set de membresías activas.
+     * De esta forma cruzamos Memberships con Persons sin necesidad de múltiples consultas
+     *
+     * @param uidsConMembresia Set con los IDs de clientes que tienen membresía activa en el centro
+     */
+    private void cargarYFiltrarClientes(Set<String> uidsConMembresia) {
+        clienteService.getAllClientesConRol(
+                new ClienteService.ClienteListCallback() {
+
+                    @Override
+                    public void onSuccess(List<Cliente> todosLosClientes) {
+                        if (!isAdded()) return;
+
+                        clientes.clear();
+
+                        /*Filtramos únicamente los clientes cuyo ID esté en el Set*/
+                        for (Cliente c : todosLosClientes) {
+                            if (uidsConMembresia.contains(c.getId())) {
+                                clientes.add(c);
+                            }
+                        }
+
+                        adapter.notifyDataSetChanged();
+                        mostrarContenido();
+                        actualizarEstadoVista();
+                    }
+
+                    @Override
+                    public void onError(String errorMessage) {
+                        if (!isAdded()) return;
+                        showSnackbar("Error al cargar los clientes del centro");
+                        mostrarContenido();
+                    }
+                });
     }
 
 
+    /**
+     * Muestra un Snackbar de confirmación antes de proceder con la baja del cliente.
+     * Si el administrador confirma, se ejecuta el proceso de eliminación en cascada
+     *
+     * @param clienteUid UID del cliente a dar de baja
+     */
+    private void onDarDeBaja(String clienteUid) {
+        if (!isAdded()) return;
+
+        Snackbar snackbar = Snackbar.make(
+                requireView(),
+                "¿Deseas dar de baja a este cliente? Se eliminarán sus reservas, membresía y cuenta.",
+                Snackbar.LENGTH_LONG
+        );
+
+        snackbar.setAction("CONFIRMAR", v -> ejecutarBaja(clienteUid));
+        snackbar.setActionTextColor(
+                getResources().getColor(android.R.color.holo_red_light, null)
+        );
+
+        View snackbarView = snackbar.getView();
+        TextView textView = snackbarView.findViewById(
+                com.google.android.material.R.id.snackbar_text
+        );
+        if (textView != null) {
+            textView.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
+            textView.setGravity(Gravity.CENTER_HORIZONTAL);
+        }
+
+        snackbar.show();
+    }
 
     /**
-     * Muestra el panel con la lista si hay clientes, o el card vacío si no hay ninguno.
-     * Ambos viven dentro de layoutContent, que ya está visible cuando se llama a este método.
+     * Ejecuta la baja completa del cliente una vez confirmada por el administrador.
+     * El proceso elimina en orden: reservas del cliente, su membresía activa
+     * y finalmente su nodo en Persons
+     *
+     * @param clienteUid UID del cliente a eliminar
+     */
+    private void ejecutarBaja(String clienteUid) {
+        /*Paso 1: buscamos la membresía activa del cliente en el centro para obtener su ID*/
+        membershipService.getMembresiasByCliente(clienteUid, membresias -> {
+            if (!isAdded()) return;
+
+            /*Paso 2: eliminamos su membresía si la tiene*/
+            if (!membresias.isEmpty()) {
+                Membership membresia = membresias.get(0);
+                if (membresia.getId() != null) {
+                    membershipService.databaseReference
+                            .child(membresia.getId())
+                            .removeValue();
+                }
+            }
+
+            /*Paso 3: buscamos el cliente en memoria y lo eliminamos de Persons*/
+            Cliente clienteAEliminar = null;
+            for (Cliente c : clientes) {
+                if (clienteUid.equals(c.getId())) {
+                    clienteAEliminar = c;
+                    break;
+                }
+            }
+
+            if (clienteAEliminar != null) {
+                clienteService.deleteCliente(clienteAEliminar);
+
+                /*Actualizamos la lista en memoria sin necesidad de recargar de Firebase*/
+                clientes.remove(clienteAEliminar);
+                adapter.notifyDataSetChanged();
+                actualizarEstadoVista();
+
+                showSnackbar("Cliente dado de baja correctamente");
+            } else {
+                showSnackbar("Error al procesar la baja del cliente");
+            }
+        });
+    }
+
+
+    /**
+     * Decide qué mostrar una vez cargados los datos:
+     * si la lista está vacía mostramos el card informativo,
+     * si hay clientes mostramos el panel con el RecyclerView
      */
     private void actualizarEstadoVista() {
         if (clientes.isEmpty()) {
@@ -200,7 +350,7 @@ public class ClientListFragment extends Fragment {
     }
 
     /**
-     * Oculta la pantalla de carga global y revela el contenido una vez que los datos están listos.
+     * Oculta el spinner de carga y muestra el contenido real del fragment
      */
     private void mostrarContenido() {
         if (!isAdded()) return;
@@ -209,10 +359,8 @@ public class ClientListFragment extends Fragment {
     }
 
 
-
     /**
-     * Limpia el backstack y navega al HomeFragment regenerando la vista principal.
-     * Usa el mismo patrón que el resto de fragments del proyecto.
+     * Limpia el backstack completo y vuelve al HomeFragment
      */
     private void navegarAlHome() {
         requireActivity().getSupportFragmentManager()
@@ -225,11 +373,9 @@ public class ClientListFragment extends Fragment {
     }
 
 
-
-
     /**
-     * Muestra un Snackbar centrado con el mensaje recibido.
-     * Comprueba isAdded() antes de actuar para evitar crashes si el fragment ya no está adjunto.
+     * Muestra un Snackbar con el texto centrado.
+     * Comprobamos isAdded() para evitar crashes si el fragment ya no está activo
      *
      * @param message Texto a mostrar en el Snackbar
      */
