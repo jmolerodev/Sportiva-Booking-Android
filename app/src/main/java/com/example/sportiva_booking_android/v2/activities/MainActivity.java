@@ -26,6 +26,7 @@ import com.example.sportiva_booking_android.R;
 import com.example.sportiva_booking_android.v2.enums.Rol;
 import com.example.sportiva_booking_android.v2.fragments.AdminListFragment;
 import com.example.sportiva_booking_android.v2.fragments.ClientListFragment;
+import com.example.sportiva_booking_android.v2.fragments.ClienteSessionsFragment;
 import com.example.sportiva_booking_android.v2.fragments.HomeFragment;
 import com.example.sportiva_booking_android.v2.fragments.MediaManagementFragment;
 import com.example.sportiva_booking_android.v2.fragments.MembershipPaymentFragment;
@@ -283,6 +284,11 @@ public class MainActivity extends AppCompatActivity {
             /*Profesional - Gestión/Creación de Sesiones Vinculadas a tu Centro Deportivo*/
             if (item.getItemId() == R.id.nav_pro_2) {
                 navegarAFragment(ProfesionalSessionsFragment.newInstance(userRol));
+            }
+
+            /*Cliente - Mis Reservas*/
+            if (item.getItemId() == R.id.nav_cli_1){
+                navegarAFragment(ClienteSessionsFragment.newInstance(userRol));
             }
 
             return false;

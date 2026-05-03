@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<com.google.android.material.card.MaterialCardView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginBottom="8dp"
+    app:cardCornerRadius="12dp"
+    app:cardElevation="4dp"
+    app:cardBackgroundColor="@color/white"
+    app:strokeColor="@color/black"
+    app:strokeWidth="1dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="14dp">
+
+        <!-- Fila 1: fecha + badge CONFIRMADA -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginBottom="6dp">
+
+            <TextView
+                android:id="@+id/tvPendienteFecha"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:textColor="@color/background"
+                android:textSize="12sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="CONFIRMADA"
+                android:paddingHorizontal="10dp"
+                android:paddingVertical="4dp"
+                android:textSize="11sp"
+                android:textStyle="bold"
+                android:textColor="@color/white"
+                android:background="@drawable/badge_background" />
+
+        </LinearLayout>
+
+        <!-- Fila 2: horario + título + badges -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+
+            <TextView
+                android:id="@+id/tvPendienteHorario"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="@color/black"
+                android:textSize="13sp"
+                android:minWidth="90dp" />
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical"
+                android:layout_marginStart="8dp">
+
+                <TextView
+                    android:id="@+id/tvPendienteTitulo"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textColor="@color/black"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    android:layout_marginBottom="4dp" />
+
+                <TextView
+                    android:id="@+id/tvPendienteTipo"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:paddingHorizontal="8dp"
+                    android:paddingVertical="3dp"
+                    android:textSize="11sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/white"
+                    android:background="@drawable/badge_background"
+                    android:layout_marginBottom="4dp" />
+
+                <TextView
+                    android:id="@+id/tvPendienteModalidad"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:paddingHorizontal="8dp"
+                    android:paddingVertical="3dp"
+                    android:textSize="11sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/white"
+                    android:background="@drawable/badge_background"
+                    android:layout_marginBottom="4dp" />
+
+                <TextView
+                    android:id="@+id/tvPendienteAforo"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:paddingHorizontal="8dp"
+                    android:paddingVertical="3dp"
+                    android:textSize="11sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/white"
+                    android:background="@drawable/badge_background" />
+
+            </LinearLayout>
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+</com.google.android.material.card.MaterialCardView>

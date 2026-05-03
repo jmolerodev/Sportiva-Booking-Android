@@ -17,8 +17,7 @@
     </group>
 
     <group android:id="@+id/group_cliente" android:visible="false">
-        <item android:id="@+id/nav_cli_1" android:title="Opcion Cliente 1" android:icon="@android:drawable/ic_menu_agenda" />
-        <item android:id="@+id/nav_cli_2" android:title="Opcion Cliente 2" android:icon="@android:drawable/ic_menu_day" />
+        <item android:id="@+id/nav_cli_1" android:title="Mis Reservas" android:icon="@android:drawable/ic_menu_agenda" />
     </group>
 
     <group android:id="@+id/group_pro" android:visible="false">

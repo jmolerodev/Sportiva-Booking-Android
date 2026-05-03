@@ -1,0 +1,365 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Layout principal del fragment de reservas del cliente.
+    Estructura idéntica a fragment_profesional_sessions.xml:
+      1. Spinner de carga (layoutCargando) visible hasta que ambos listeners completen
+      2. Contenido (layoutContenido) con:
+           - Cabecera logo + título
+           - Calendario navegable mes a mes con cuadrícula 7 columnas
+           - Sección reservas del día seleccionado
+           - Sección reservas pendientes futuras
+           - Sección historial canceladas/finalizadas
+           - Botón volver home
+-->
+<ScrollView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/background">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="24dp">
+
+        <!-- Logo -->
+        <ImageView
+            android:layout_width="120dp"
+            android:layout_height="120dp"
+            android:layout_gravity="center"
+            android:layout_marginBottom="16dp"
+            android:scaleType="fitCenter"
+            android:src="@drawable/logo_app" />
+
+        <!-- Título -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:layout_marginBottom="4dp"
+            android:text="Mis Reservas"
+            android:textColor="@color/text"
+            android:textSize="22sp"
+            android:textStyle="bold" />
+
+        <!-- Subtítulo -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:layout_marginTop="8dp"
+            android:layout_marginBottom="24dp"
+            android:text="Consulta y gestiona tus sesiones reservadas"
+            android:textColor="@color/text"
+            android:textStyle="bold"
+            android:textSize="13sp" />
+
+        <!-- ── Spinner de carga ──────────────────────────────────────── -->
+        <LinearLayout
+            android:id="@+id/layoutCargandoClienteSessions"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:orientation="vertical"
+            android:padding="48dp"
+            android:visibility="visible">
+
+            <ProgressBar
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:indeterminateTint="@color/white" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:text="Cargando reservas..."
+                android:textColor="@color/white"
+                android:textSize="16sp"
+                android:textStyle="bold" />
+
+        </LinearLayout>
+
+        <!-- ── Contenido principal ───────────────────────────────────── -->
+        <LinearLayout
+            android:id="@+id/layoutContenidoClienteSessions"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:visibility="gone">
+
+            <!-- ── Card Calendario ──────────────────────────────────── -->
+            <androidx.cardview.widget.CardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
+                app:cardBackgroundColor="@color/white"
+                app:cardCornerRadius="20dp"
+                app:cardElevation="8dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <!-- Navegación mes -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:layout_marginBottom="12dp">
+
+                        <ImageButton
+                            android:id="@+id/btnMesAnteriorCliente"
+                            android:layout_width="36dp"
+                            android:layout_height="36dp"
+                            android:background="?attr/selectableItemBackgroundBorderless"
+                            android:src="@drawable/ic_chevron_left"
+                            android:contentDescription="Mes anterior" />
+
+                        <TextView
+                            android:id="@+id/tvMesActualCliente"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:gravity="center"
+                            android:textColor="@color/black"
+                            android:textSize="16sp"
+                            android:textStyle="bold" />
+
+                        <ImageButton
+                            android:id="@+id/btnMesSiguienteCliente"
+                            android:layout_width="36dp"
+                            android:layout_height="36dp"
+                            android:background="?attr/selectableItemBackgroundBorderless"
+                            android:src="@drawable/ic_chevron_right"
+                            android:contentDescription="Mes siguiente" />
+
+                    </LinearLayout>
+
+                    <!-- Cabecera días semana: Lun Mar Mié Jue Vie Sáb Dom -->
+                    <GridLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:columnCount="7"
+                        android:layout_marginBottom="4dp">
+
+                        <TextView android:layout_width="0dp" android:layout_columnWeight="1"
+                            android:layout_height="wrap_content" android:gravity="center"
+                            android:text="Lun" android:textSize="12sp" android:textStyle="bold"
+                            android:textColor="@color/background" />
+                        <TextView android:layout_width="0dp" android:layout_columnWeight="1"
+                            android:layout_height="wrap_content" android:gravity="center"
+                            android:text="Mar" android:textSize="12sp" android:textStyle="bold"
+                            android:textColor="@color/background" />
+                        <TextView android:layout_width="0dp" android:layout_columnWeight="1"
+                            android:layout_height="wrap_content" android:gravity="center"
+                            android:text="Mié" android:textSize="12sp" android:textStyle="bold"
+                            android:textColor="@color/background" />
+                        <TextView android:layout_width="0dp" android:layout_columnWeight="1"
+                            android:layout_height="wrap_content" android:gravity="center"
+                            android:text="Jue" android:textSize="12sp" android:textStyle="bold"
+                            android:textColor="@color/background" />
+                        <TextView android:layout_width="0dp" android:layout_columnWeight="1"
+                            android:layout_height="wrap_content" android:gravity="center"
+                            android:text="Vie" android:textSize="12sp" android:textStyle="bold"
+                            android:textColor="@color/background" />
+                        <TextView android:layout_width="0dp" android:layout_columnWeight="1"
+                            android:layout_height="wrap_content" android:gravity="center"
+                            android:text="Sáb" android:textSize="12sp" android:textStyle="bold"
+                            android:textColor="@color/background" />
+                        <TextView android:layout_width="0dp" android:layout_columnWeight="1"
+                            android:layout_height="wrap_content" android:gravity="center"
+                            android:text="Dom" android:textSize="12sp" android:textStyle="bold"
+                            android:textColor="@color/background" />
+
+                    </GridLayout>
+
+                    <!-- Cuadrícula días — se puebla dinámicamente desde el fragment -->
+                    <GridLayout
+                        android:id="@+id/gridCalendarioCliente"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:columnCount="7" />
+
+                </LinearLayout>
+
+            </androidx.cardview.widget.CardView>
+
+            <!-- ── Card Reservas del día ─────────────────────────────── -->
+            <androidx.cardview.widget.CardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
+                app:cardBackgroundColor="@color/white"
+                app:cardCornerRadius="20dp"
+                app:cardElevation="8dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="4dp"
+                        android:text="Reservas del día"
+                        android:textColor="@color/black"
+                        android:textSize="18sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/tvFechaSeleccionadaCliente"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="12dp"
+                        android:textColor="@color/background"
+                        android:textSize="13sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/tvReservasDiaVacio"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="No tienes reservas confirmadas para este día"
+                        android:textColor="@color/black"
+                        android:textSize="14sp"
+                        android:visibility="gone" />
+
+                    <androidx.recyclerview.widget.RecyclerView
+                        android:id="@+id/recyclerReservasDia"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:nestedScrollingEnabled="false" />
+
+                </LinearLayout>
+
+            </androidx.cardview.widget.CardView>
+
+            <!-- ── Card Reservas pendientes ──────────────────────────── -->
+            <androidx.cardview.widget.CardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
+                app:cardBackgroundColor="@color/white"
+                app:cardCornerRadius="20dp"
+                app:cardElevation="8dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="4dp"
+                        android:text="Próximas reservas"
+                        android:textColor="@color/black"
+                        android:textSize="18sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="12dp"
+                        android:text="Sesiones futuras confirmadas"
+                        android:textColor="@color/background"
+                        android:textSize="13sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/tvReservasPendientesVacio"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="No tienes reservas futuras pendientes"
+                        android:textColor="@color/black"
+                        android:textSize="14sp"
+                        android:visibility="gone" />
+
+                    <androidx.recyclerview.widget.RecyclerView
+                        android:id="@+id/recyclerReservasPendientes"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:nestedScrollingEnabled="false" />
+
+                </LinearLayout>
+
+            </androidx.cardview.widget.CardView>
+
+            <!-- ── Card Historial ────────────────────────────────────── -->
+            <androidx.cardview.widget.CardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
+                app:cardBackgroundColor="@color/white"
+                app:cardCornerRadius="20dp"
+                app:cardElevation="8dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="4dp"
+                        android:text="Historial"
+                        android:textColor="@color/black"
+                        android:textSize="18sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="12dp"
+                        android:text="Sesiones finalizadas y canceladas"
+                        android:textColor="@color/background"
+                        android:textSize="13sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/tvHistorialVacioCliente"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="No hay registros en el historial"
+                        android:textColor="@color/black"
+                        android:textSize="14sp"
+                        android:visibility="gone" />
+
+                    <androidx.recyclerview.widget.RecyclerView
+                        android:id="@+id/recyclerHistorialCliente"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:nestedScrollingEnabled="false" />
+
+                </LinearLayout>
+
+            </androidx.cardview.widget.CardView>
+
+        </LinearLayout>
+
+        <!-- Botón volver -->
+        <Button
+            android:id="@+id/btnVolverHomeCliente"
+            android:layout_width="match_parent"
+            android:layout_height="52dp"
+            android:layout_marginTop="24dp"
+            android:backgroundTint="@color/black"
+            android:text="Volver a Home"
+            android:textColor="@color/white"
+            android:textStyle="bold"
+            app:cornerRadius="12dp" />
+
+    </LinearLayout>
+
+</ScrollView>

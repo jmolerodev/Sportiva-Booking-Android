@@ -173,4 +173,50 @@ public class SessionService {
                 .addOnSuccessListener(unused -> callback.onSuccess())
                 .addOnFailureListener(e -> callback.onError(e.getMessage()));
     }
+
+    // ── Métodos nuevos añadidos para ClienteSessionsFragment ─────────────
+
+    /**
+     * Escucha en tiempo real la lista completa de sesiones de Firebase.
+     * Necesario para que los cambios de aforoActual tras una cancelación de reserva
+     * se propaguen inmediatamente a la vista del cliente sin recargar.
+     * Devuelve el ValueEventListener activo para que el fragment pueda cancelarlo
+     * en onDestroyView y evitar fugas de memoria.
+     *
+     * @param callback Retorno con la lista completa de sesiones o el error
+     * @return ValueEventListener activo — el llamador debe cancelarlo con cancelarListenerSesiones
+     */
+    public ValueEventListener escucharTodasLasSesiones(SessionsCallback callback) {
+        ValueEventListener listener = new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                List<Session> lista = new ArrayList<>();
+                for (DataSnapshot child : snapshot.getChildren()) {
+                    Session s = child.getValue(Session.class);
+                    if (s == null) continue;
+                    s.setId(child.getKey());
+                    lista.add(s);
+                }
+                callback.onSuccess(lista);
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) {
+                callback.onError(error.getMessage());
+            }
+        };
+        sessionsRef.addValueEventListener(listener);
+        return listener;
+    }
+
+    /**
+     * Cancela el listener de tiempo real registrado sobre el nodo Sessions.
+     * Se llama desde ClienteSessionsFragment.onDestroyView para liberar el listener.
+     *
+     * @param listener ValueEventListener devuelto por escucharTodasLasSesiones
+     */
+    public void cancelarListenerSesiones(ValueEventListener listener) {
+        if (listener == null) return;
+        sessionsRef.removeEventListener(listener);
+    }
 }
