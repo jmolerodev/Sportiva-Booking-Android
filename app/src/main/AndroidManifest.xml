@@ -2,6 +2,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
+    <uses-permission android:name="android.permission.INTERNET" />
+
     <application
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
@@ -12,6 +14,7 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.SportivaBookingAndroid"
         tools:targetApi="31">
+
         <activity
             android:name=".v2.activities.LoginActivity"
             android:exported="false" />
@@ -26,13 +29,27 @@
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!--MainActivity como singleTop para que onNewIntent capture
+            el deep link de retorno desde Chrome Custom Tab sin recrear la Activity-->
         <activity
             android:name=".v2.activities.MainActivity"
-            android:exported="false" />
+            android:exported="true"
+            android:launchMode="singleTop">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <!--Scheme del deep link que PayPal usará para volver a la app-->
+                <data
+                    android:scheme="sportiva"
+                    android:host="payment" />
+            </intent-filter>
+        </activity>
+
     </application>
 
 </manifest>

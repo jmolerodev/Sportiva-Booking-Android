@@ -20,7 +20,7 @@
             android:id="@+id/badgeMembresia"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="✅  Membresía Activa"
+            android:text="Membresía Activa"
             android:textColor="@color/background"
             android:textStyle="bold"
             android:textSize="11sp"

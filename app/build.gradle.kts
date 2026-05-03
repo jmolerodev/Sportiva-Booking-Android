@@ -48,4 +48,5 @@ dependencies {
     implementation ("com.google.android.material:material:1.11.0")
     implementation ("com.github.bumptech.glide:glide:4.16.0")
     implementation ("com.google.android.flexbox:flexbox:3.0.0")
+    implementation ("androidx.browser:browser:1.8.0")
 }

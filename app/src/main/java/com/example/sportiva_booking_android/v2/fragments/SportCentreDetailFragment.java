@@ -992,22 +992,25 @@ public class SportCentreDetailFragment extends Fragment {
 
     /**
      * Abre el fragment de contratación de membresía pasando el centroId por Bundle.
+     * Se registra con el tag membership_payment para que MainActivity pueda
+     * localizarlo desde onNewIntent al recibir el deep link de retorno de PayPal.
      */
     private void abrirContratarMembresia() {
-        // TODO: sustituir por el fragment de pago de membresía cuando esté disponible
-        showSnackbar("Funcionalidad de pago próximamente disponible");
+        MembershipPaymentFragment fragment =
+                MembershipPaymentFragment.newInstance(centroId);
+        requireActivity().getSupportFragmentManager()
+                .beginTransaction()
+                .replace(R.id.fragment_container, fragment, "membership_payment")
+                .addToBackStack(null)
+                .commit();
     }
 
     /**
      * Abre el fragment de soporte del cliente para continuar la conversación activa.
      */
     private void abrirSoporteCliente() {
-        //SoporteClienteFragment fragment = SoporteClienteFragment.newInstance();
-        requireActivity().getSupportFragmentManager()
-                .beginTransaction()
-                //.replace(R.id.fragment_container, fragment)
-                .addToBackStack(null)
-                .commit();
+        /*TODO: conectar SoporteClienteFragment cuando esté disponible*/
+        showSnackbar("El chat completo estará disponible en breve");
     }
 
 

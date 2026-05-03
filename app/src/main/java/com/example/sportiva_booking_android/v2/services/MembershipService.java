@@ -109,4 +109,26 @@ public class MembershipService {
             }
         });
     }
+
+    /**
+     * Contrato de retorno para operaciones de escritura simples.
+     */
+    public interface WriteCallback {
+        void onExito();
+        void onError(String mensaje);
+    }
+
+    /**
+     * Persiste una nueva membresía en Firebase generando un ID automático con push().
+     * Se invoca desde MembershipPaymentFragment tras la confirmación del pago por PayPal.
+     *
+     * @param membresia Objeto Membership completo listo para persistir
+     * @param callback  Retorno de éxito o error
+     */
+    public void saveMembresia(Membership membresia, WriteCallback callback) {
+        databaseReference.push().setValue(membresia)
+                .addOnSuccessListener(v -> callback.onExito())
+                .addOnFailureListener(e -> callback.onError(e.getMessage()));
+    }
+
 }

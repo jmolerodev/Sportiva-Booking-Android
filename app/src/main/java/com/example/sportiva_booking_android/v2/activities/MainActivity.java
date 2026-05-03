@@ -2,6 +2,7 @@ package com.example.sportiva_booking_android.v2.activities;
 
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.net.Uri;
 import android.os.Bundle;
 import android.view.Gravity;
 import android.view.Menu;
@@ -27,6 +28,7 @@ import com.example.sportiva_booking_android.v2.fragments.AdminListFragment;
 import com.example.sportiva_booking_android.v2.fragments.ClientListFragment;
 import com.example.sportiva_booking_android.v2.fragments.HomeFragment;
 import com.example.sportiva_booking_android.v2.fragments.MediaManagementFragment;
+import com.example.sportiva_booking_android.v2.fragments.MembershipPaymentFragment;
 import com.example.sportiva_booking_android.v2.fragments.ProfesionalListFragment;
 import com.example.sportiva_booking_android.v2.fragments.ProfesionalSessionsFragment;
 import com.example.sportiva_booking_android.v2.fragments.ProfileFragment;
@@ -40,6 +42,10 @@ public class MainActivity extends AppCompatActivity {
     /*Claves para SharedPreferences*/
     private static final String PREFS_NAME   = "SportivaPrefs";
     private static final String KEY_REMEMBER = "rememberUser";
+
+    /*Tag con el que se registra el MembershipPaymentFragment en el backstack,
+     * necesario para localizarlo desde onNewIntent al recibir el deep link de PayPal*/
+    private static final String TAG_MEMBERSHIP_PAYMENT = "membership_payment";
 
     /*Componentes de la vista*/
     private DrawerLayout   drawerLayout;
@@ -93,6 +99,30 @@ public class MainActivity extends AppCompatActivity {
             getSupportFragmentManager().beginTransaction()
                     .replace(R.id.fragment_container, HomeFragment.newInstance(userRol))
                     .commit();
+        }
+    }
+
+    /**
+     * Captura el deep link de retorno desde Chrome Custom Tab cuando PayPal
+     * redirige a sportiva://payment/success o sportiva://payment/cancel.
+     * Gracias a launchMode="singleTop" en el Manifest, Android no recrea la
+     * Activity sino que llama a este método con el Intent entrante.
+     * Localizamos el MembershipPaymentFragment por su tag y le delegamos
+     * el procesamiento del resultado.
+     */
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        Uri uri = intent.getData();
+        if (uri == null || !"sportiva".equals(uri.getScheme())) return;
+
+        /*Buscamos el fragment activo por el tag con el que lo añadimos al backstack*/
+        MembershipPaymentFragment fragment = (MembershipPaymentFragment)
+                getSupportFragmentManager()
+                        .findFragmentByTag(TAG_MEMBERSHIP_PAYMENT);
+
+        if (fragment != null) {
+            fragment.onDeepLinkRecibido(uri);
         }
     }
 
@@ -209,7 +239,7 @@ public class MainActivity extends AppCompatActivity {
                 return true;
             }
 
-            if (item.getItemId() == R.id.nav_perfil){
+            if (item.getItemId() == R.id.nav_perfil) {
                 navegarAFragment(ProfileFragment.newInstance(userRol));
                 return true;
             }
@@ -221,7 +251,7 @@ public class MainActivity extends AppCompatActivity {
             }
 
             /*ROOT: lista de administradores*/
-            if (item.getItemId() == R.id.nav_root_2){
+            if (item.getItemId() == R.id.nav_root_2) {
                 navegarAFragment(AdminListFragment.newInstance(userRol));
                 return true;
             }
@@ -245,13 +275,13 @@ public class MainActivity extends AppCompatActivity {
             }
 
             /*Profesional - Gestión del Contenido Multimedia Vinculado al Centro Deportivo*/
-            if (item.getItemId() == R.id.nav_pro_1){
+            if (item.getItemId() == R.id.nav_pro_1) {
                 navegarAFragment(MediaManagementFragment.newInstance(userRol));
                 return true;
             }
 
             /*Profesional - Gestión/Creación de Sesiones Vinculadas a tu Centro Deportivo*/
-            if (item.getItemId() == R.id.nav_pro_2){
+            if (item.getItemId() == R.id.nav_pro_2) {
                 navegarAFragment(ProfesionalSessionsFragment.newInstance(userRol));
             }
 
@@ -262,13 +292,21 @@ public class MainActivity extends AppCompatActivity {
     /**
      * Sustituye el fragmento actual por el indicado y lo añade a la back stack
      * para que el botón Atrás devuelva al HomeFragment automáticamente.
+     * Los fragments de pago se registran con su tag propio para que onNewIntent
+     * pueda localizarlos al recibir el deep link de retorno de PayPal.
      *
      * @param fragment Fragment destino ya instanciado con sus argumentos
      */
     private void navegarAFragment(Fragment fragment) {
+        /*Asignamos el tag membership_payment al fragment de pago para que
+         * onNewIntent pueda encontrarlo al volver desde Chrome Custom Tab*/
+        String tag = (fragment instanceof MembershipPaymentFragment)
+                ? TAG_MEMBERSHIP_PAYMENT
+                : null;
+
         getSupportFragmentManager()
                 .beginTransaction()
-                .replace(R.id.fragment_container, fragment)
+                .replace(R.id.fragment_container, fragment, tag)
                 .addToBackStack(null)
                 .commit();
     }
