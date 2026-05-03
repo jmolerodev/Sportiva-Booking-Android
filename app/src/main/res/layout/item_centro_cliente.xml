@@ -61,7 +61,7 @@
             android:textColor="@color/white"
             android:textStyle="bold"
             android:textSize="13sp"
-            android:backgroundTint="@color/background"
+            android:backgroundTint="#322E2E"
             app:cornerRadius="10dp" />
 
     </LinearLayout>

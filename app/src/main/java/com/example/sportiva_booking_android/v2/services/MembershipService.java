@@ -27,6 +27,7 @@ public class MembershipService {
     /**
      * Obtiene todas las membresías de un cliente concreto.
      * Replica el getMembresiasByCliente() de Angular filtrando por clienteId.
+     *
      * @param clienteId UID del cliente autenticado
      * @param callback  Callback que devuelve la lista de membresías del cliente
      */
@@ -56,9 +57,56 @@ public class MembershipService {
     }
 
     /**
-     * Interfaz funcional equivalente al Observable<IMembership[]> de Angular.
+     * Interfaz con la que manejaremos una lista de membersias.
      */
     public interface MembershipListCallback {
         void onResult(List<Membership> membresias);
+    }
+
+    /**
+     * Contrato de retorno para operaciones que devuelven una única membresía o null.
+     */
+    public interface MembershipCallback {
+        void onResult(Membership membresia);
+    }
+
+    /**
+     * Verifica si un cliente tiene una membresía activa y vigente en un centro concreto.
+     * Comprueba tanto el estado ACTIVA como que la fecha de fin no haya expirado.
+     *
+     * @param clienteId UID del cliente autenticado
+     * @param centroId  UID del centro deportivo a verificar
+     * @param callback  Retorno con la membresía activa o null si no la tiene
+     */
+    public void getMembresiaActivaByClienteYCentro(String clienteId,
+                                                   String centroId,
+                                                   MembershipCallback callback) {
+        databaseReference.addListenerForSingleValueEvent(new ValueEventListener() {
+
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                long ahora = System.currentTimeMillis();
+
+                for (DataSnapshot child : snapshot.getChildren()) {
+                    Membership m = child.getValue(Membership.class);
+                    if (m != null
+                            && clienteId.equals(m.getClienteId())
+                            && centroId.equals(m.getCentroId())
+                            && "ACTIVA".equals(m.getEstado())
+                            && m.getFechaFin() > ahora) {
+                        m.setId(child.getKey());
+                        callback.onResult(m);
+                        return;
+                    }
+                }
+                /* No se encontró membresía activa y vigente para este cliente y centro */
+                callback.onResult(null);
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) {
+                callback.onResult(null);
+            }
+        });
     }
 }

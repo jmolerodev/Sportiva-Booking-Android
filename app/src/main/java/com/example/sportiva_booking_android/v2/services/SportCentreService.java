@@ -166,7 +166,6 @@ public class SportCentreService {
 
     /**
      * Interfaz de callback para operaciones simples de éxito o error.
-     * Replica la OperationCallback de AdministradorService.
      */
     public interface OperationCallback {
         void onSuccess();
@@ -176,7 +175,6 @@ public class SportCentreService {
     /**
      * Elimina de forma atómica el nodo del centro deportivo en 'Sports-Centre'
      * y limpia el centroId de todos los profesionales vinculados en 'Persons'.
-     * Replica el deleteSportCentreComplete() del servicio Angular.
      *
      * @param adminUid UID del administrador propietario del centro (clave del nodo)
      * @param callback Callback que notifica el resultado de la operación
@@ -188,6 +186,18 @@ public class SportCentreService {
                 .removeValue()
                 .addOnSuccessListener(unused -> callback.onSuccess())
                 .addOnFailureListener(e -> callback.onError(e.getMessage()));
+    }
+
+    /**
+     * Obtiene un centro deportivo por su UID de nodo.
+     * Alias de getSportCentreById() para mantener consistencia
+     * con la nomenclatura del resto del proyecto.
+     *
+     * @param uid      UID del nodo en Sports-Centre
+     * @param callback Callback que devuelve el centro o null si no existe
+     */
+    public void getSportCentreByUid(String uid, SportCentreCallback callback) {
+        getSportCentreById(uid, callback);
     }
 
 }

@@ -43,7 +43,7 @@ public class HomeFragment extends Fragment {
 
     /*Servicios*/
     private SportCentreService sportCentreService;
-    private MembershipService  membershipService;
+    private MembershipService membershipService;
 
     /*Spinner de carga global*/
     private View layoutLoading;
@@ -86,9 +86,13 @@ public class HomeFragment extends Fragment {
     private Button btnEditarCentro;
     private Button btnEliminarCentro;
 
+
+    private Button btnVerCentro;
+
     /**
      * Método de fábrica estático para instanciar el fragment con el rol del usuario.
      * Es la forma correcta de pasar datos a un Fragment en Android.
+     *
      * @param rol Rol del usuario autenticado
      * @return Nueva instancia de HomeFragment con el rol encapsulado en sus argumentos
      */
@@ -120,7 +124,7 @@ public class HomeFragment extends Fragment {
 
         /*Inicializamos los servicios*/
         sportCentreService = new SportCentreService();
-        membershipService  = new MembershipService();
+        membershipService = new MembershipService();
     }
 
     @Nullable
@@ -153,37 +157,33 @@ public class HomeFragment extends Fragment {
      * Los botones btnEditarCentro y btnEliminarCentro se obtienen aquí como null
      * porque viven dentro de item_centro_card.xml, que se infla dinámicamente.
      * Se reasignan en inflarCardCentro() cuando se construye la card del Admin.
+     *
      * @param view Vista raíz del fragment inflada
      */
     private void bindViews(View view) {
-        layoutLoading        = view.findViewById(R.id.layoutLoading);
-        layoutContent        = view.findViewById(R.id.layoutContent);
-
-        sectionAdmin         = view.findViewById(R.id.sectionAdmin);
-        sectionPro           = view.findViewById(R.id.sectionPro);
-        sectionCliente       = view.findViewById(R.id.sectionCliente);
-        sectionRoot          = view.findViewById(R.id.sectionRoot);
-
-        cardCentroAdmin      = view.findViewById(R.id.cardCentroAdmin);
-        cardCentroPro        = view.findViewById(R.id.cardCentroPro);
-
-        divSinCentroAdmin    = view.findViewById(R.id.divSinCentroAdmin);
-        divSinCentroPro      = view.findViewById(R.id.divSinCentroPro);
+        layoutLoading = view.findViewById(R.id.layoutLoading);
+        layoutContent = view.findViewById(R.id.layoutContent);
+        sectionAdmin = view.findViewById(R.id.sectionAdmin);
+        sectionPro = view.findViewById(R.id.sectionPro);
+        sectionCliente = view.findViewById(R.id.sectionCliente);
+        sectionRoot = view.findViewById(R.id.sectionRoot);
+        cardCentroAdmin = view.findViewById(R.id.cardCentroAdmin);
+        cardCentroPro = view.findViewById(R.id.cardCentroPro);
+        divSinCentroAdmin = view.findViewById(R.id.divSinCentroAdmin);
+        divSinCentroPro = view.findViewById(R.id.divSinCentroPro);
         divSinCentrosCliente = view.findViewById(R.id.divSinCentrosCliente);
-
-        sectionConMembresia  = view.findViewById(R.id.sectionConMembresia);
-        sectionSinMembresia  = view.findViewById(R.id.sectionSinMembresia);
-        listConMembresia     = view.findViewById(R.id.listConMembresia);
-        listSinMembresia     = view.findViewById(R.id.listSinMembresia);
-        bannerSinMembresia   = view.findViewById(R.id.bannerSinMembresia);
-
-        btnCrearCentro       = view.findViewById(R.id.btnCrearCentro);
+        sectionConMembresia = view.findViewById(R.id.sectionConMembresia);
+        sectionSinMembresia = view.findViewById(R.id.sectionSinMembresia);
+        listConMembresia = view.findViewById(R.id.listConMembresia);
+        listSinMembresia = view.findViewById(R.id.listSinMembresia);
+        bannerSinMembresia = view.findViewById(R.id.bannerSinMembresia);
+        btnCrearCentro = view.findViewById(R.id.btnCrearCentro);
 
         /*
          * Estos dos botones no existen en fragment_home.xml: viven en item_centro_card.xml.
          * Se asignan desde inflarCardCentro() al inflar la card del Administrador.
          */
-        btnEditarCentro   = null;
+        btnEditarCentro = null;
         btnEliminarCentro = null;
     }
 
@@ -200,11 +200,12 @@ public class HomeFragment extends Fragment {
 
     /**
      * Controla la visibilidad del spinner de carga global y del contenido principal.
+     *
      * @param loading true para mostrar el spinner, false para mostrar el contenido
      */
     private void mostrarLoading(boolean loading) {
         layoutLoading.setVisibility(loading ? View.VISIBLE : View.GONE);
-        layoutContent.setVisibility(loading ? View.GONE   : View.VISIBLE);
+        layoutContent.setVisibility(loading ? View.GONE : View.VISIBLE);
     }
 
     /**
@@ -215,10 +216,18 @@ public class HomeFragment extends Fragment {
         if (currentUid == null) return;
 
         switch (userRol) {
-            case ADMINISTRADOR: cargarDatosAdmin();   break;
-            case PROFESIONAL:   cargarDatosPro();     break;
-            case CLIENTE:       cargarDatosCliente(); break;
-            case ROOT:          mostrarSeccionRoot(); break;
+            case ADMINISTRADOR:
+                cargarDatosAdmin();
+                break;
+            case PROFESIONAL:
+                cargarDatosPro();
+                break;
+            case CLIENTE:
+                cargarDatosCliente();
+                break;
+            case ROOT:
+                mostrarSeccionRoot();
+                break;
         }
     }
 
@@ -364,6 +373,7 @@ public class HomeFragment extends Fragment {
     /**
      * Delega en inflarCardCentro() para construir la card del Administrador.
      * Pasa mostrarBotones=true para que aparezcan Editar y Eliminar.
+     *
      * @param centro Centro deportivo encontrado en Firebase
      */
     private void rellenarDatosCentroAdmin(SportCentre centro) {
@@ -378,6 +388,7 @@ public class HomeFragment extends Fragment {
     /**
      * Delega en inflarCardCentro() para construir la card del Profesional.
      * Pasa mostrarBotones=false para que no aparezcan acciones de gestión.
+     *
      * @param centro Centro deportivo encontrado en Firebase
      */
     private void rellenarDatosCentroPro(SportCentre centro) {
@@ -398,6 +409,7 @@ public class HomeFragment extends Fragment {
      * apuntando a la instancia activa de la card.
      * Método reutilizable entre Admin y Pro: replica el patrón de componente
      * compartido de Angular adaptado a la vista dinámica de Android.
+     *
      * @param parent         ViewGroup donde se añadirá la card inflada
      * @param centro         Centro deportivo cuyos datos se van a mostrar
      * @param labelRol       Texto del label superior según el rol del usuario
@@ -415,14 +427,14 @@ public class HomeFragment extends Fragment {
                 .inflate(R.layout.item_centro_card, parent, false);
 
         /*Referencias a las vistas de la card*/
-        ImageView    ivFoto          = card.findViewById(R.id.ivFotoCentro);
-        TextView     tvLabel         = card.findViewById(R.id.tvLabelRol);
-        TextView     tvNombre        = card.findViewById(R.id.tvNombreCentroCard);
-        TextView     tvDireccion     = card.findViewById(R.id.tvDireccionCentroCard);
-        TextView     tvTelefono      = card.findViewById(R.id.tvTelefonoCentroCard);
-        LinearLayout layoutBotones   = card.findViewById(R.id.layoutBotonesCentro);
-        Button       btnEditarCard   = card.findViewById(R.id.btnEditarCentroCard);
-        Button       btnEliminarCard = card.findViewById(R.id.btnEliminarCentroCard);
+        ImageView ivFoto = card.findViewById(R.id.ivFotoCentro);
+        TextView tvLabel = card.findViewById(R.id.tvLabelRol);
+        TextView tvNombre = card.findViewById(R.id.tvNombreCentroCard);
+        TextView tvDireccion = card.findViewById(R.id.tvDireccionCentroCard);
+        TextView tvTelefono = card.findViewById(R.id.tvTelefonoCentroCard);
+        LinearLayout layoutBotones = card.findViewById(R.id.layoutBotonesCentro);
+        Button btnEditarCard = card.findViewById(R.id.btnEditarCentroCard);
+        Button btnEliminarCard = card.findViewById(R.id.btnEliminarCentroCard);
 
         /*Rellenamos los datos del centro*/
         tvLabel.setText(labelRol);
@@ -458,7 +470,7 @@ public class HomeFragment extends Fragment {
             layoutBotones.setVisibility(View.VISIBLE);
 
             /*Reasignamos las referencias globales a los botones activos de la card*/
-            btnEditarCentro   = btnEditarCard;
+            btnEditarCentro = btnEditarCard;
             btnEliminarCentro = btnEliminarCard;
 
             /*Editar: abrimos el fragment en modo edición*/
@@ -475,6 +487,7 @@ public class HomeFragment extends Fragment {
      * Renderiza las dos listas de centros del cliente: con membresía y sin ella.
      * Gestiona también los estados vacíos con sus divs informativos correspondientes.
      * Replica la lógica del bloque esCliente de la plantilla Angular.
+     *
      * @param conMembresia Lista de centros donde el cliente tiene membresía activa
      * @param sinMembresia Lista de centros donde el cliente no tiene membresía
      */
@@ -523,6 +536,8 @@ public class HomeFragment extends Fragment {
 
     /**
      * Infla y rellena una card de centro deportivo para las listas del cliente.
+     * Al pulsar "Ver Centro" navega a SportCentreDetailFragment pasando el centroId por Bundle.
+     *
      * @param centro       Centro deportivo a mostrar
      * @param conMembresia true si el cliente tiene membresía activa en este centro
      * @return Vista inflada y rellena lista para añadir al layout
@@ -535,6 +550,7 @@ public class HomeFragment extends Fragment {
         TextView tvDireccion = card.findViewById(R.id.tvDireccionCentro);
         TextView tvTelefono  = card.findViewById(R.id.tvTelefonoCentro);
         View     badgeActiva = card.findViewById(R.id.badgeMembresia);
+        Button   btnVerCentro = card.findViewById(R.id.btnVerCentro);
 
         tvNombre.setText(centro.getNombre());
         tvDireccion.setText(centro.getDireccion());
@@ -545,12 +561,24 @@ public class HomeFragment extends Fragment {
         /*Mostramos el badge solo en los centros con membresía activa*/
         badgeActiva.setVisibility(conMembresia ? View.VISIBLE : View.GONE);
 
+        /*Navegamos al detalle del centro pasando su UID por Bundle*/
+        btnVerCentro.setOnClickListener(v -> {
+            SportCentreDetailFragment fragment =
+                    SportCentreDetailFragment.newInstance(centro.getId());
+            requireActivity().getSupportFragmentManager()
+                    .beginTransaction()
+                    .replace(R.id.fragment_container, fragment)
+                    .addToBackStack(null)
+                    .commit();
+        });
+
         return card;
     }
 
     /**
      * Abre AddSportCentreFragment en modo creación o edición.
      * Replica la navegación router.navigate(['/add-sport-centre']) de Angular.
+     *
      * @param modoEdicion true si el admin ya tiene centro y quiere editarlo
      */
     private void abrirAddSportCentre(boolean modoEdicion) {
@@ -567,6 +595,7 @@ public class HomeFragment extends Fragment {
      * Muestra un Snackbar de confirmación antes de proceder con la eliminación del centro.
      * Advierte al usuario del alcance del borrado e incluye acción de confirmación.
      * Replica el patrón confirmarEliminacion() de AdminListFragment.
+     *
      * @param centro Centro deportivo que se desea eliminar
      */
     private void confirmarEliminacion(SportCentre centro) {
@@ -597,6 +626,7 @@ public class HomeFragment extends Fragment {
      * Gestiona el proceso de eliminación del centro deportivo delegando al servicio.
      * Deshabilita el botón mientras procesa para evitar pulsaciones dobles.
      * Replica el patrón eliminarAdministrador() de AdminListFragment.
+     *
      * @param centro Centro deportivo a eliminar
      */
     private void eliminarCentro(SportCentre centro) {
@@ -637,6 +667,7 @@ public class HomeFragment extends Fragment {
     /**
      * Método utilitario para mostrar Snackbars centrados.
      * En Fragments, usamos requireView() para obtener la raíz del layout.
+     *
      * @param message Texto a mostrar
      */
     private void showCenteredSnackbar(String message) {
