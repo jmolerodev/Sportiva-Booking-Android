@@ -16,6 +16,10 @@ import com.google.android.material.snackbar.Snackbar;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.functions.FirebaseFunctions;
+
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Activity encargada de gestionar el restablecimiento de contraseña del usuario.
@@ -36,14 +40,18 @@ public class ResetPassword extends AppCompatActivity {
     /*Instancia de Firebase Authentication*/
     private FirebaseAuth firebaseAuth;
 
+    /*Instancia de Firebase Functions para verificar si el correo existe en Auth*/
+    private FirebaseFunctions firebaseFunctions;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_reset_password);
 
-        /*Inicializamos Firebase Auth*/
-        firebaseAuth = FirebaseAuth.getInstance();
+        /*Inicializamos Firebase Auth y Functions*/
+        firebaseAuth      = FirebaseAuth.getInstance();
+        firebaseFunctions = FirebaseFunctions.getInstance();
 
         /*Inicializamos los componentes de la vista*/
         etEmailReset        = findViewById(R.id.etEmailReset);
@@ -115,7 +123,9 @@ public class ResetPassword extends AppCompatActivity {
     }
 
     /**
-     * Método mediante el cual enviaremos el correo de restablecimiento de contraseña via Firebase Auth
+     * Método mediante el cual enviaremos el correo de restablecimiento de contraseña via Firebase Auth.
+     * Antes de enviarlo, verificamos mediante la Cloud Function checkEmailExists que el correo
+     * esté registrado en Auth para evitar envíos a cuentas inexistentes.
      */
     private void sendResetEmail() {
 
@@ -130,9 +140,29 @@ public class ResetPassword extends AppCompatActivity {
         /*Validamos los campos antes de continuar*/
         if (!validateFields()) return;
 
-        /*Enviamos el correo de restablecimiento via Firebase Auth*/
-        firebaseAuth.sendPasswordResetEmail(userEmail)
-                .addOnSuccessListener(unused -> onEmailSentSuccess())
+        /*Construimos el payload para la Cloud Function*/
+        Map<String, Object> data = new HashMap<>();
+        data.put("email", userEmail);
+
+        /*Verificamos primero si el correo existe en Auth antes de enviar el email*/
+        firebaseFunctions
+                .getHttpsCallable("checkEmailExists")
+                .call(data)
+                .addOnSuccessListener(result -> {
+
+                    Map<String, Object> resultData = (Map<String, Object>) result.getData();
+                    boolean exists = Boolean.TRUE.equals(resultData.get("exists"));
+
+                    if (!exists) {
+                        onEmailNotFound();
+                        return;
+                    }
+
+                    /*Si el correo existe procedemos a enviar el correo de restablecimiento*/
+                    firebaseAuth.sendPasswordResetEmail(userEmail)
+                            .addOnSuccessListener(unused -> onEmailSentSuccess())
+                            .addOnFailureListener(e -> onEmailSentFailure());
+                })
                 .addOnFailureListener(e -> onEmailSentFailure());
     }
 
@@ -151,10 +181,17 @@ public class ResetPassword extends AppCompatActivity {
     }
 
     /**
+     * Se ejecuta cuando el correo introducido no está registrado en Auth
+     */
+    private void onEmailNotFound() {
+        showCenteredSnackbar("No se encontró ninguna cuenta con ese correo electrónico");
+    }
+
+    /**
      * Se ejecuta cuando Firebase devuelve un error inesperado
      */
     private void onEmailSentFailure() {
-        showCenteredSnackbar("No se encontró ninguna cuenta con ese correo electrónico");
+        showCenteredSnackbar("Ha ocurrido un error. Inténtalo de nuevo más tarde");
     }
 
     /**
