@@ -63,7 +63,7 @@ public class MediaAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> 
         TextView tvFecha       = v.findViewById(R.id.tvMediaFecha);
         TextView tvDescripcion = v.findViewById(R.id.tvMediaDescripcion);
         Button   btnReproducir = v.findViewById(R.id.btnReproducirMedia);
-        Button   btnEliminar   = v.findViewById(R.id.btnEliminarMedia);
+
 
         tvNombre.setText(media.getNombre());
         tvDescripcion.setText(media.getDescripcion());
@@ -74,10 +74,6 @@ public class MediaAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> 
 
         btnReproducir.setOnClickListener(v2 -> {
             if (reproducirListener != null) reproducirListener.onReproducir(media);
-        });
-
-        btnEliminar.setOnClickListener(v2 -> {
-            if (eliminarListener != null) eliminarListener.onEliminar(media.getUrl());
         });
     }
 

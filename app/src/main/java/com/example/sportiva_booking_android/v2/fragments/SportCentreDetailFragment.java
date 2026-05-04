@@ -1,6 +1,8 @@
 package com.example.sportiva_booking_android.v2.fragments;
 
 import android.annotation.SuppressLint;
+import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
 import android.view.Gravity;
 import android.view.LayoutInflater;
@@ -41,6 +43,7 @@ import com.google.firebase.database.ValueEventListener;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 
@@ -952,8 +955,10 @@ public class SportCentreDetailFragment extends Fragment {
 
 
     /**
-     * Renderiza la lista de vídeos del centro inflando item_media_video.xml
-     * para cada elemento. Si la lista está vacía muestra el texto informativo.
+     * Renderiza la lista de vídeos del centro inflando item_media.xml para cada elemento.
+     * Conecta el botón de reproducir al reproductor nativo del dispositivo mediante
+     * un Intent ACTION_VIEW con la URL del vídeo almacenada en Firebase Storage.
+     * Si la lista está vacía muestra el texto informativo.
      *
      * @param videos Lista de objetos Media a mostrar
      */
@@ -973,10 +978,35 @@ public class SportCentreDetailFragment extends Fragment {
 
             TextView tvNombreVideo = item.findViewById(R.id.tvMediaNombre);
             TextView tvDescVideo   = item.findViewById(R.id.tvMediaDescripcion);
+            TextView tvFechaVideo  = item.findViewById(R.id.tvMediaFecha);
+            Button   btnReproducir = item.findViewById(R.id.btnReproducirMedia);
 
             tvNombreVideo.setText(media.getNombre());
             tvDescVideo.setText(media.getDescripcion() != null
                     ? media.getDescripcion() : "");
+
+            /*Formateamos la fecha de subida si existe*/
+            if (media.getFecha_subida() > 0) {
+                SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy · HH:mm",
+                        new Locale("es", "ES"));
+                tvFechaVideo.setText(sdf.format(new Date(media.getFecha_subida())));
+            } else {
+                tvFechaVideo.setVisibility(View.GONE);
+            }
+
+            /*Reproducir: abre el reproductor nativo del dispositivo con la URL del vídeo*/
+            final String url = media.getUrl();
+            if (url != null && !url.isEmpty()) {
+                btnReproducir.setOnClickListener(v -> {
+                    Intent intent = new Intent(Intent.ACTION_VIEW);
+                    intent.setDataAndType(Uri.parse(url), "video/mp4");
+                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                    startActivity(intent);
+                });
+            } else {
+                /*Sin URL no hay nada que reproducir: deshabilitamos el botón*/
+                btnReproducir.setEnabled(false);
+            }
 
             layoutVideos.addView(item);
         }
