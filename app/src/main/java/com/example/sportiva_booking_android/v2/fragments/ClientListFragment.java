@@ -289,8 +289,8 @@ public class ClientListFragment extends Fragment {
 
     /**
      * Ejecuta la baja completa del cliente una vez confirmada por el administrador.
-     * El proceso elimina en orden: reservas del cliente, su membresía activa
-     * y finalmente su nodo en Persons
+     * El proceso elimina en orden: la membresía activa del cliente
+     * y finalmente su nodo en Persons y su cuenta de Firebase Authentication
      *
      * @param clienteUid UID del cliente a eliminar
      */
@@ -309,30 +309,29 @@ public class ClientListFragment extends Fragment {
                 }
             }
 
-            /*Paso 3: buscamos el cliente en memoria y lo eliminamos de Persons*/
-            Cliente clienteAEliminar = null;
-            for (Cliente c : clientes) {
-                if (clienteUid.equals(c.getId())) {
-                    clienteAEliminar = c;
-                    break;
+            /*Paso 3: eliminamos al cliente de Persons y de Firebase Authentication*/
+            clienteService.deleteCliente(clienteUid, new ClienteService.OperationCallback() {
+
+                @Override
+                public void onSuccess() {
+                    if (!isAdded()) return;
+
+                    /*Actualizamos la lista en memoria sin necesidad de recargar de Firebase*/
+                    clientes.removeIf(c -> clienteUid.equals(c.getId()));
+                    adapter.notifyDataSetChanged();
+                    actualizarEstadoVista();
+
+                    showSnackbar("Cliente dado de baja correctamente");
                 }
-            }
 
-            if (clienteAEliminar != null) {
-                clienteService.deleteCliente(clienteAEliminar);
-
-                /*Actualizamos la lista en memoria sin necesidad de recargar de Firebase*/
-                clientes.remove(clienteAEliminar);
-                adapter.notifyDataSetChanged();
-                actualizarEstadoVista();
-
-                showSnackbar("Cliente dado de baja correctamente");
-            } else {
-                showSnackbar("Error al procesar la baja del cliente");
-            }
+                @Override
+                public void onError(String errorMessage) {
+                    if (!isAdded()) return;
+                    showSnackbar("Error al procesar la baja del cliente");
+                }
+            });
         });
     }
-
 
     /**
      * Decide qué mostrar una vez cargados los datos:

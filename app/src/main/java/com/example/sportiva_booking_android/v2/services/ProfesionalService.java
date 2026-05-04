@@ -9,6 +9,7 @@ import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
+import com.google.firebase.functions.FirebaseFunctions;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -21,12 +22,17 @@ public class ProfesionalService {
     DatabaseReference databaseReference;
     DatabaseReference rootReference;
 
+    /* Instancia de Firebase Functions para invocar Cloud Functions */
+    FirebaseFunctions firebaseFunctions;
+
     /* Constructor del Servicio */
     public ProfesionalService(Context context) {
         /* Nos conectamos a la Base de Datos, accediendo al nodo 'Persons' respectivamente */
         databaseReference = FirebaseDatabase.getInstance().getReference("Persons");
         /* Referencia a la raíz necesaria para escrituras atómicas multi-ruta */
         rootReference     = FirebaseDatabase.getInstance().getReference();
+        /* Inicializamos Firebase Functions */
+        firebaseFunctions = FirebaseFunctions.getInstance();
     }
 
     /**
@@ -184,7 +190,19 @@ public class ProfesionalService {
 
                                         /* aplicamos todas las escrituras de forma atómica */
                                         rootReference.updateChildren(updates)
-                                                .addOnSuccessListener(unused -> callback.onSuccess())
+                                                .addOnSuccessListener(unused -> {
+
+                                                    /* eliminamos al profesional de Firebase Authentication mediante Cloud Function */
+                                                    Map<String, Object> data = new HashMap<>();
+                                                    data.put("uid", uid);
+
+                                                    firebaseFunctions
+                                                            .getHttpsCallable("deleteUserFromAuth")
+                                                            .call(data)
+                                                            .addOnSuccessListener(result -> callback.onSuccess())
+                                                            .addOnFailureListener(e -> callback.onError(e.getMessage()));
+
+                                                })
                                                 .addOnFailureListener(e -> callback.onError(e.getMessage()));
                                     }
 

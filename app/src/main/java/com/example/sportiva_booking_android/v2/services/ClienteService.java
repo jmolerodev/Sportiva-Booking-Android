@@ -11,9 +11,12 @@ import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.Query;
 import com.google.firebase.database.ValueEventListener;
+import com.google.firebase.functions.FirebaseFunctions;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class ClienteService {
 
@@ -21,10 +24,19 @@ public class ClienteService {
 
     /*Atributos del Servicio*/
     DatabaseReference databaseReference;
+    DatabaseReference rootReference;
+
+    /*Instancia de Firebase Functions para invocar Cloud Functions*/
+    FirebaseFunctions firebaseFunctions;
 
     /*Constructor del Servicio*/
     public ClienteService(Context context) {
+        /*Nos conectamos a la Base de Datos, accediendo al nodo 'Persons' respectivamente*/
         databaseReference = FirebaseDatabase.getInstance().getReference(COLLECTION_NAME);
+        /*Referencia a la raíz necesaria para escrituras atómicas multi-ruta*/
+        rootReference     = FirebaseDatabase.getInstance().getReference();
+        /*Inicializamos Firebase Functions*/
+        firebaseFunctions = FirebaseFunctions.getInstance();
     }
 
     /**
@@ -50,12 +62,33 @@ public class ClienteService {
     }
 
     /**
-     * Método mediante el que eliminaremos a un Cliente de nuestra Base de Datos
-     *
-     * @param cliente - Cliente que deseamos eliminar
+     * Método mediante el que eliminaremos de forma completamente recursiva a un Cliente:
+     *   1. Elimina de forma atómica el nodo del cliente en 'Persons'.
+     *   2. Invoca la Cloud Function 'deleteUserFromAuth' para eliminar al usuario de Firebase Authentication.
+     * @param uid      - UID del Cliente a eliminar
+     * @param callback - Callback que notifica el resultado de la operación
      */
-    public void deleteCliente(Cliente cliente) {
-        databaseReference.child(cliente.getId()).removeValue();
+    public void deleteCliente(String uid, OperationCallback callback) {
+
+        Map<String, Object> updates = new HashMap<>();
+        updates.put("Persons/" + uid, null);
+
+        /*Paso 1: eliminamos de forma atómica el nodo en Realtime Database*/
+        rootReference.updateChildren(updates)
+                .addOnSuccessListener(unused -> {
+
+                    /*Paso 2: eliminamos al cliente de Firebase Authentication mediante Cloud Function*/
+                    Map<String, Object> data = new HashMap<>();
+                    data.put("uid", uid);
+
+                    firebaseFunctions
+                            .getHttpsCallable("deleteUserFromAuth")
+                            .call(data)
+                            .addOnSuccessListener(result -> callback.onSuccess())
+                            .addOnFailureListener(e -> callback.onError(e.getMessage()));
+
+                })
+                .addOnFailureListener(e -> callback.onError(e.getMessage()));
     }
 
     /**
@@ -106,6 +139,14 @@ public class ClienteService {
      */
     public interface ClienteListCallback {
         void onSuccess(List<Cliente> clientes);
+        void onError(String errorMessage);
+    }
+
+    /**
+     * Interfaz de callback para operaciones simples de éxito o error
+     */
+    public interface OperationCallback {
+        void onSuccess();
         void onError(String errorMessage);
     }
 

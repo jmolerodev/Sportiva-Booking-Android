@@ -9,6 +9,7 @@ import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
+import com.google.firebase.functions.FirebaseFunctions;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -21,12 +22,17 @@ public class AdministradorService {
     DatabaseReference databaseReference;
     DatabaseReference rootReference;
 
+    /*Instancia de Firebase Functions para invocar Cloud Functions*/
+    FirebaseFunctions firebaseFunctions;
+
     /*Constructor del Servicio*/
     public AdministradorService (Context context){
         /*Nos conectamos a la Base de Datos, accediendo al nodo 'Persons' respectivamente*/
         databaseReference = FirebaseDatabase.getInstance().getReference("Persons");
         /*Referencia a la raíz necesaria para escrituras atómicas multi-ruta*/
         rootReference     = FirebaseDatabase.getInstance().getReference();
+        /*Inicializamos Firebase Functions*/
+        firebaseFunctions = FirebaseFunctions.getInstance();
     }
 
     /**
@@ -123,18 +129,33 @@ public class AdministradorService {
     }
 
     /**
-     * Método mediante el cual eliminaremos de forma atómica el nodo del Administrador
-     * en 'Persons' y su Centro Deportivo asociado en 'Sports-Centre'
+     * Método mediante el cual eliminaremos de forma completamente recursiva al administrador:
+     *   1. Elimina de forma atómica el nodo del administrador en 'Persons' y su centro en 'Sports-Centre'.
+     *   2. Invoca la Cloud Function 'deleteUserFromAuth' para eliminar al usuario de Firebase Authentication.
      * @param uid      - UID del Administrador a eliminar
      * @param callback - Callback que notifica el resultado de la operación
      */
     public void deleteAdministradorCompleto(String uid, OperationCallback callback) {
+
         Map<String, Object> updates = new HashMap<>();
         updates.put("Persons/" + uid, null);
         updates.put("Sports-Centre/" + uid, null);
 
+        /*Paso 1: eliminamos de forma atómica los nodos en Realtime Database*/
         rootReference.updateChildren(updates)
-                .addOnSuccessListener(unused -> callback.onSuccess())
+                .addOnSuccessListener(unused -> {
+
+                    /*Paso 2: eliminamos al administrador de Firebase Authentication mediante Cloud Function*/
+                    Map<String, Object> data = new HashMap<>();
+                    data.put("uid", uid);
+
+                    firebaseFunctions
+                            .getHttpsCallable("deleteUserFromAuth")
+                            .call(data)
+                            .addOnSuccessListener(result -> callback.onSuccess())
+                            .addOnFailureListener(e -> callback.onError(e.getMessage()));
+
+                })
                 .addOnFailureListener(e -> callback.onError(e.getMessage()));
     }
 }
