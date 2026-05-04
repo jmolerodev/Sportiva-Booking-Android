@@ -1,0 +1,293 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@color/background">
+
+    <!-- ── Pantalla de carga ──────────────────────────────────────────── -->
+    <LinearLayout
+        android:id="@+id/layoutCargandoSoporteCliente"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:gravity="center"
+        android:orientation="vertical">
+
+        <ProgressBar
+            android:id="@+id/progressBar"
+            style="?android:attr/progressBarStyle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:text="Cargando soporte..."
+            android:textSize="14sp"
+            android:textColor="@color/black"
+            android:textStyle="bold" />
+
+    </LinearLayout>
+
+    <!-- ── Contenido principal ────────────────────────────────────────── -->
+    <LinearLayout
+        android:id="@+id/layoutContenidoSoporteCliente"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:visibility="gone">
+
+        <!-- Cabecera: nombre del administrador -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:paddingHorizontal="16dp"
+            android:paddingVertical="10dp"
+            android:background="#F5F5F5"
+            android:gravity="center_vertical">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Soporte"
+                android:textStyle="bold"
+                android:textSize="13sp"
+                android:textColor="?attr/colorPrimary" />
+
+            <TextView
+                android:id="@+id/tvNombreAdmin"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textSize="13sp"
+                android:textColor="@color/black" />
+
+        </LinearLayout>
+
+        <!-- ── Estado: SIN MEMBRESÍA ──────────────────────────────────── -->
+        <LinearLayout
+            android:id="@+id/layoutSinMembresia"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:gravity="center"
+            android:orientation="vertical"
+            android:padding="32dp"
+            android:visibility="gone">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:text="No tienes una membresía activa"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:textColor="@color/black" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:gravity="center"
+                android:text="Necesitas una membresía activa en un centro deportivo para acceder al soporte."
+                android:textSize="14sp"
+                android:textColor="@color/black" />
+
+        </LinearLayout>
+
+        <!-- ── Estado: SOLICITAR CHAT (sin chat abierto) ─────────────── -->
+        <ScrollView
+            android:id="@+id/layoutSolicitarChat"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:visibility="gone">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Contactar con soporte"
+                    android:textSize="18sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/black" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:layout_marginBottom="16dp"
+                    android:text="Escribe tu consulta y el administrador del centro la atenderá lo antes posible."
+                    android:textSize="14sp"
+                    android:textColor="@color/black" />
+
+                <com.google.android.material.textfield.TextInputLayout
+                    style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="Describe tu consulta...">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/etPrimerMensaje"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:maxLength="1000"
+                        android:inputType="textMultiLine"
+                        android:minLines="4"
+                        android:maxLines="8" />
+
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnEnviarSolicitud"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
+                    android:text="Enviar solicitud" />
+
+            </LinearLayout>
+
+        </ScrollView>
+
+        <!-- ── Estado: CHAT PENDIENTE ─────────────────────────────────── -->
+        <LinearLayout
+            android:id="@+id/layoutChatPendiente"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical"
+            android:visibility="gone">
+
+            <!-- Aviso de espera -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:paddingHorizontal="16dp"
+                android:paddingVertical="12dp"
+                android:background="#FFF8E1"
+                android:gravity="center_vertical">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Tu solicitud está pendiente de aceptación. El administrador la revisará en breve."
+                    android:textSize="13sp"
+                    android:textColor="#5D4037" />
+
+            </LinearLayout>
+
+            <!-- Mensajes en modo lectura -->
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/rvMensajesPendiente"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:paddingHorizontal="4dp"
+                android:paddingVertical="8dp"
+                android:clipToPadding="false" />
+
+        </LinearLayout>
+
+        <!-- ── Estado: CHAT ACTIVO ────────────────────────────────────── -->
+        <LinearLayout
+            android:id="@+id/layoutChatActivo"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical"
+            android:visibility="gone">
+
+            <!-- Lista de mensajes -->
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/rvMensajes"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1"
+                android:paddingHorizontal="4dp"
+                android:paddingVertical="8dp"
+                android:clipToPadding="false" />
+
+            <!-- Input de envío -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:paddingHorizontal="8dp"
+                android:paddingVertical="6dp"
+                android:gravity="center_vertical"
+                android:background="#FAFAFA">
+
+                <com.google.android.material.textfield.TextInputLayout
+                    style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:hint="Escribe un mensaje...">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/etMensaje"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:maxLength="500"
+                        android:inputType="textMultiLine"
+                        android:maxLines="3" />
+
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <ImageButton
+                    android:id="@+id/btnEnviar"
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:layout_marginStart="6dp"
+                    android:src="@android:drawable/ic_menu_send"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="Enviar mensaje" />
+
+            </LinearLayout>
+
+        </LinearLayout>
+
+        <!-- ── Estado: CHAT CERRADO ───────────────────────────────────── -->
+        <LinearLayout
+            android:id="@+id/layoutChatCerrado"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:gravity="center"
+            android:orientation="vertical"
+            android:padding="32dp"
+            android:visibility="gone">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:text="Chat cerrado"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:textColor="@color/black" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:layout_marginBottom="24dp"
+                android:gravity="center"
+                android:text="Esta conversación ha sido cerrada por el administrador. Puedes abrir una nueva solicitud si necesitas más ayuda."
+                android:textSize="14sp"
+                android:textColor="@color/black" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnNuevaSolicitud"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Nueva solicitud" />
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+</LinearLayout>

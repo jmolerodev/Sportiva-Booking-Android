@@ -21,6 +21,7 @@ import com.example.sportiva_booking_android.R;
 import com.example.sportiva_booking_android.v2.enums.EstadoChat;
 import com.example.sportiva_booking_android.v2.enums.EstadoReserva;
 import com.example.sportiva_booking_android.v2.enums.EstadoSesion;
+import com.example.sportiva_booking_android.v2.enums.Rol;
 import com.example.sportiva_booking_android.v2.models.Booking;
 import com.example.sportiva_booking_android.v2.models.Media;
 import com.example.sportiva_booking_android.v2.models.Session;
@@ -1001,8 +1002,20 @@ public class SportCentreDetailFragment extends Fragment {
      * Abre el fragment de soporte del cliente para continuar la conversación activa.
      */
     private void abrirSoporteCliente() {
-        /*TODO: conectar SoporteClienteFragment cuando esté disponible*/
-        showSnackbar("El chat completo estará disponible en breve");
+        if (centro == null) return;
+
+        SoporteClienteFragment fragment = SoporteClienteFragment.newInstanceFromCentro(
+                Rol.CLIENTE,
+                centroId,
+                centro.getAdminUid(),
+                centro.getNombre()   // o el campo que tenga el nombre del admin en SportCentre
+        );
+
+        requireActivity().getSupportFragmentManager()
+                .beginTransaction()
+                .replace(R.id.fragment_container, fragment)
+                .addToBackStack(null)
+                .commit();
     }
 
 

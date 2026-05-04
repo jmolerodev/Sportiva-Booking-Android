@@ -33,6 +33,7 @@ import com.example.sportiva_booking_android.v2.fragments.MembershipPaymentFragme
 import com.example.sportiva_booking_android.v2.fragments.ProfesionalListFragment;
 import com.example.sportiva_booking_android.v2.fragments.ProfesionalSessionsFragment;
 import com.example.sportiva_booking_android.v2.fragments.ProfileFragment;
+import com.example.sportiva_booking_android.v2.fragments.SoporteAdminFragment;
 import com.example.sportiva_booking_android.v2.fragments.UserManagementFragment;
 import com.google.android.material.navigation.NavigationView;
 import com.google.android.material.snackbar.Snackbar;
@@ -275,6 +276,12 @@ public class MainActivity extends AppCompatActivity {
                 return true;
             }
 
+            /*ADMIN - Gestión de Soportes con sus Clientes*/
+            if (item.getItemId() == R.id.nav_adm_4){
+                navegarAFragment(SoporteAdminFragment.newInstance(userRol));
+                return true;
+            }
+
             /*Profesional - Gestión del Contenido Multimedia Vinculado al Centro Deportivo*/
             if (item.getItemId() == R.id.nav_pro_1) {
                 navegarAFragment(MediaManagementFragment.newInstance(userRol));
@@ -284,11 +291,13 @@ public class MainActivity extends AppCompatActivity {
             /*Profesional - Gestión/Creación de Sesiones Vinculadas a tu Centro Deportivo*/
             if (item.getItemId() == R.id.nav_pro_2) {
                 navegarAFragment(ProfesionalSessionsFragment.newInstance(userRol));
+                return true;
             }
 
             /*Cliente - Mis Reservas*/
             if (item.getItemId() == R.id.nav_cli_1){
                 navegarAFragment(ClienteSessionsFragment.newInstance(userRol));
+                return true;
             }
 
             return false;
