@@ -34,7 +34,7 @@
 
         <!-- ── Pantalla de carga global ──────────────────────────────────── -->
         <LinearLayout
-            android:id="@+id/layoutCargandoSessions"
+            android:id="@+id/layoutCarga"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:gravity="center"
@@ -246,6 +246,60 @@
                     <!-- Lista de slots -->
                     <androidx.recyclerview.widget.RecyclerView
                         android:id="@+id/recyclerSlots"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:nestedScrollingEnabled="false" />
+
+                </LinearLayout>
+
+            </androidx.cardview.widget.CardView>
+
+            <!-- ── Card próximas sesiones ─────────────────────────────────── -->
+            <androidx.cardview.widget.CardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
+                app:cardCornerRadius="20dp"
+                app:cardElevation="8dp"
+                app:cardBackgroundColor="@color/white">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="4dp"
+                        android:text="Próximas sesiones"
+                        android:textColor="@color/black"
+                        android:textSize="18sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="12dp"
+                        android:text="Sesiones activas futuras programadas"
+                        android:textColor="@color/background"
+                        android:textSize="13sp"
+                        android:textStyle="bold" />
+
+                    <!-- Estado vacío pendientes -->
+                    <TextView
+                        android:id="@+id/tvSesionesPendientesVacio"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="No tienes sesiones futuras programadas"
+                        android:textColor="@color/black"
+                        android:textSize="14sp"
+                        android:visibility="gone" />
+
+                    <!-- Lista de sesiones pendientes -->
+                    <androidx.recyclerview.widget.RecyclerView
+                        android:id="@+id/recyclerSesionesPendientes"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:nestedScrollingEnabled="false" />

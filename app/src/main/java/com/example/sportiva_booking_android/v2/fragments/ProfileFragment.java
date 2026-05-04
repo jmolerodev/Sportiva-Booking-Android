@@ -54,7 +54,7 @@ public class ProfileFragment extends Fragment {
     private View              layoutCargando;
     private TextView          tvCargandoPerfil;
 
-    /* vistas — contenido real (oculto hasta que todo esté listo) */
+    /* vistas — contenido real (oculto hasta este listo) */
     private View              layoutContenido;
 
     /* vistas — header */

@@ -23,6 +23,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.sportiva_booking_android.R;
 import com.example.sportiva_booking_android.v2.adapters.SessionHistorialAdapter;
+import com.example.sportiva_booking_android.v2.adapters.SessionPendientesAdapter;
 import com.example.sportiva_booking_android.v2.adapters.SlotAdapter;
 import com.example.sportiva_booking_android.v2.enums.EstadoSesion;
 import com.example.sportiva_booking_android.v2.enums.EstadoSlot;
@@ -55,40 +56,44 @@ public class ProfesionalSessionsFragment extends Fragment
     private static final String ARG_ROL = "ROL";
 
     /*Vistas*/
-    private LinearLayout  layoutCargando;
-    private LinearLayout  layoutContenido;
-    private TextView      tvSubtituloCentro;
-    private ImageButton   btnMesAnterior;
-    private ImageButton   btnMesSiguiente;
-    private TextView      tvMesActual;
-    private GridLayout    gridCalendario;
-    private TextView      tvFechaSeleccionada;
-    private TextView      tvSlotsVacio;
-    private RecyclerView  recyclerSlots;
-    private TextView      tvHistorialVacio;
-    private RecyclerView  recyclerHistorial;
-    private Button        btnVolverHome;
+    private LinearLayout layoutCargando;
+    private LinearLayout layoutContenido;
+    private TextView tvSubtituloCentro;
+    private ImageButton btnMesAnterior;
+    private ImageButton btnMesSiguiente;
+    private TextView tvMesActual;
+    private GridLayout gridCalendario;
+    private TextView tvFechaSeleccionada;
+    private TextView tvSlotsVacio;
+    private RecyclerView recyclerSlots;
+    private TextView tvSesionesPendientesVacio;
+    private RecyclerView recyclerSesionesPendientes;
+    private TextView tvHistorialVacio;
+    private RecyclerView recyclerHistorial;
+    private Button btnVolverHome;
 
     /*Servicios*/
-    private SessionService     sessionService;
+    private SessionService sessionService;
     private SportCentreService sportCentreService;
     private ProfesionalService profesionalService;
 
     /*Atributos de la Clase*/
-    private Rol    rolUsuario;
+    private Rol rolUsuario;
     private String profesionalUid;
     private String especialidad;
     private SportCentre centro;
 
     private Calendar fechaSeleccionada = Calendar.getInstance();
-    private Calendar mesActual         = Calendar.getInstance();
+    private Calendar mesActual = Calendar.getInstance();
 
     private final java.util.Set<String> diasConSesion = new java.util.HashSet<>();
 
-    private final List<SlotHorario> slots     = new ArrayList<>();
-    private final List<Session>     historial = new ArrayList<>();
+    private final List<SlotHorario> slots = new ArrayList<>();
+    private final List<Session> sesionesPendientes = new ArrayList<>();
+    private final List<Session> historial = new ArrayList<>();
 
-    private SlotAdapter             slotAdapter;
+    private SlotAdapter slotAdapter;
+    private SessionPendientesAdapter pendientesAdapter;
     private SessionHistorialAdapter historialAdapter;
 
     private final SimpleDateFormat sdfDia =
@@ -97,9 +102,9 @@ public class ProfesionalSessionsFragment extends Fragment
     private final SimpleDateFormat sdfMes =
             new SimpleDateFormat("MMMM yyyy", new Locale("es", "ES"));
 
-    private boolean loadingCentro       = true;
+    private boolean loadingCentro = true;
     private boolean loadingEspecialidad = true;
-    private boolean loadingHistorial    = true;
+    private boolean loadingHistorial = true;
 
     /**
      * Método de factoría. Pasamos el rol por Bundle igual que el resto de fragments.
@@ -156,7 +161,7 @@ public class ProfesionalSessionsFragment extends Fragment
      * Instancia los servicios necesarios para leer datos de Firebase.
      */
     private void inicializarServicios() {
-        sessionService     = new SessionService();
+        sessionService = new SessionService();
         sportCentreService = new SportCentreService();
         profesionalService = new ProfesionalService(requireContext());
     }
@@ -168,19 +173,21 @@ public class ProfesionalSessionsFragment extends Fragment
      * @param view Vista raíz del fragment inflada en onCreateView
      */
     private void inicializarVistas(View view) {
-        layoutCargando      = view.findViewById(R.id.layoutCargandoSessions);
-        layoutContenido     = view.findViewById(R.id.layoutContenidoSessions);
-        tvSubtituloCentro   = view.findViewById(R.id.tvSubtituloCentro);
-        btnMesAnterior      = view.findViewById(R.id.btnMesAnterior);
-        btnMesSiguiente     = view.findViewById(R.id.btnMesSiguiente);
-        tvMesActual         = view.findViewById(R.id.tvMesActual);
-        gridCalendario      = view.findViewById(R.id.gridCalendario);
+        layoutCargando = view.findViewById(R.id.layoutCarga);
+        layoutContenido = view.findViewById(R.id.layoutContenidoSessions);
+        tvSubtituloCentro = view.findViewById(R.id.tvSubtituloCentro);
+        btnMesAnterior = view.findViewById(R.id.btnMesAnterior);
+        btnMesSiguiente = view.findViewById(R.id.btnMesSiguiente);
+        tvMesActual = view.findViewById(R.id.tvMesActual);
+        gridCalendario = view.findViewById(R.id.gridCalendario);
         tvFechaSeleccionada = view.findViewById(R.id.tvFechaSeleccionada);
-        tvSlotsVacio        = view.findViewById(R.id.tvSlotsVacio);
-        recyclerSlots       = view.findViewById(R.id.recyclerSlots);
-        tvHistorialVacio    = view.findViewById(R.id.tvHistorialVacio);
-        recyclerHistorial   = view.findViewById(R.id.recyclerHistorial);
-        btnVolverHome       = view.findViewById(R.id.btnVolverHome);
+        tvSlotsVacio = view.findViewById(R.id.tvSlotsVacio);
+        recyclerSlots = view.findViewById(R.id.recyclerSlots);
+        tvSesionesPendientesVacio = view.findViewById(R.id.tvSesionesPendientesVacio);
+        recyclerSesionesPendientes = view.findViewById(R.id.recyclerSesionesPendientes);
+        tvHistorialVacio = view.findViewById(R.id.tvHistorialVacio);
+        recyclerHistorial = view.findViewById(R.id.recyclerHistorial);
+        btnVolverHome = view.findViewById(R.id.btnVolverHome);
 
         layoutCargando.setVisibility(View.VISIBLE);
         layoutContenido.setVisibility(View.GONE);
@@ -193,6 +200,10 @@ public class ProfesionalSessionsFragment extends Fragment
         slotAdapter = new SlotAdapter(slots, this, this);
         recyclerSlots.setLayoutManager(new LinearLayoutManager(requireContext()));
         recyclerSlots.setAdapter(slotAdapter);
+
+        pendientesAdapter = new SessionPendientesAdapter(sesionesPendientes);
+        recyclerSesionesPendientes.setLayoutManager(new LinearLayoutManager(requireContext()));
+        recyclerSesionesPendientes.setAdapter(pendientesAdapter);
 
         historialAdapter = new SessionHistorialAdapter(historial, this);
         recyclerHistorial.setLayoutManager(new LinearLayoutManager(requireContext()));
@@ -285,8 +296,10 @@ public class ProfesionalSessionsFragment extends Fragment
     }
 
     /**
-     * Carga todas las sesiones del profesional para construir el historial
-     * y marcar los días con sesión activa en el calendario.
+     * Carga todas las sesiones del profesional para construir el historial,
+     * las sesiones pendientes futuras y marcar los días con sesión activa en el calendario.
+     * Equivale a cargarHistorial() original pero ahora también separa las pendientes,
+     * igual que reconstruirPendientesEHistorial() del ClienteSessionsFragment.
      */
     private void cargarHistorial() {
         sessionService.getSessionsByProfesional(profesionalUid, new SessionService.SessionsCallback() {
@@ -297,19 +310,34 @@ public class ProfesionalSessionsFragment extends Fragment
 
                 diasConSesion.clear();
                 historial.clear();
+                sesionesPendientes.clear();
 
                 for (Session s : sesiones) {
                     if (s.getEstado() == EstadoSesion.ACTIVA) {
                         diasConSesion.add(claveDia(s.getFecha()));
+
+                        /*
+                         * Sesión activa y con hora de fin en el futuro → pendiente.
+                         * Equivale a la lógica fechaFin > ahora del ClienteSessionsFragment.
+                         */
+                        if (getFechaFinSesion(s) > ahora) {
+                            sesionesPendientes.add(s);
+                        }
                     }
                     if (s.getEstado() == EstadoSesion.CANCELADA || esSesionFinalizada(s, ahora)) {
                         historial.add(s);
                     }
                 }
 
+                /* Pendientes: orden ascendente por fecha, igual que en el cliente */
+                sesionesPendientes.sort((a, b) -> Long.compare(a.getFecha(), b.getFecha()));
+
+                /* Historial: orden descendente por fecha */
                 historial.sort((a, b) -> Long.compare(b.getFecha(), a.getFecha()));
 
+                pendientesAdapter.notifyDataSetChanged();
                 historialAdapter.notifyDataSetChanged();
+                actualizarEstadoVacioPendientes();
                 actualizarEstadoVacioHistorial();
 
                 loadingHistorial = false;
@@ -382,17 +410,17 @@ public class ProfesionalSessionsFragment extends Fragment
     private List<SlotHorario> generarSlots(List<Session> sesionesDelDia) {
         List<SlotHorario> resultado = new ArrayList<>();
         if (centro == null || centro.getHorario() == null) return resultado;
-        if (esPasado(fechaSeleccionada))                   return resultado;
+        if (esPasado(fechaSeleccionada)) return resultado;
 
         String nombreDia = getNombreDia(fechaSeleccionada);
         SportCentre.HorarioDia horarioDia = centro.getHorario().get(nombreDia);
         if (horarioDia == null || !horarioDia.isAbierto()) return resultado;
 
         int hApertura = Integer.parseInt(horarioDia.getApertura().split(":")[0]);
-        int hCierre   = Integer.parseInt(horarioDia.getCierre().split(":")[0]);
+        int hCierre = Integer.parseInt(horarioDia.getCierre().split(":")[0]);
 
-        Calendar ahora         = Calendar.getInstance();
-        boolean  esHoySelected = esHoy(fechaSeleccionada);
+        Calendar ahora = Calendar.getInstance();
+        boolean esHoySelected = esHoy(fechaSeleccionada);
 
         if (esHoySelected && ahora.get(Calendar.HOUR_OF_DAY) >= hCierre) return resultado;
 
@@ -400,7 +428,7 @@ public class ProfesionalSessionsFragment extends Fragment
             if (esHoySelected && h <= ahora.get(Calendar.HOUR_OF_DAY)) continue;
 
             String horaInicio = String.format(Locale.getDefault(), "%02d:00", h);
-            String horaFin    = String.format(Locale.getDefault(), "%02d:00", h + 1);
+            String horaFin = String.format(Locale.getDefault(), "%02d:00", h + 1);
 
             Session sesionEnSlot = null;
             for (Session s : sesionesDelDia) {
@@ -454,12 +482,12 @@ public class ProfesionalSessionsFragment extends Fragment
         View dialogView = LayoutInflater.from(requireContext())
                 .inflate(R.layout.dialog_crear_sesion, null);
 
-        EditText etTitulo      = dialogView.findViewById(R.id.etDialogTitulo);
+        EditText etTitulo = dialogView.findViewById(R.id.etDialogTitulo);
         EditText etDescripcion = dialogView.findViewById(R.id.etDialogDescripcion);
-        Spinner  spinnerTipo   = dialogView.findViewById(R.id.spinnerDialogTipo);
-        Spinner  spModalidad   = dialogView.findViewById(R.id.spinnerDialogModalidad);
-        EditText etAforoMax    = dialogView.findViewById(R.id.etDialogAforoMax);
-        TextView tvSlotInfo    = dialogView.findViewById(R.id.tvDialogSlotInfo);
+        Spinner spinnerTipo = dialogView.findViewById(R.id.spinnerDialogTipo);
+        Spinner spModalidad = dialogView.findViewById(R.id.spinnerDialogModalidad);
+        EditText etAforoMax = dialogView.findViewById(R.id.etDialogAforoMax);
+        TextView tvSlotInfo = dialogView.findViewById(R.id.tvDialogSlotInfo);
 
         tvSlotInfo.setText(String.format("%s – %s · %s",
                 slot.getHoraInicio(), slot.getHoraFin(),
@@ -505,13 +533,13 @@ public class ProfesionalSessionsFragment extends Fragment
     private void guardarSesion(SlotHorario slot,
                                EditText etTitulo,
                                EditText etDescripcion,
-                               Spinner  spinnerTipo,
-                               Spinner  spModalidad,
+                               Spinner spinnerTipo,
+                               Spinner spModalidad,
                                EditText etAforoMax) {
 
-        String titulo       = etTitulo.getText().toString().trim();
-        String descripcion  = etDescripcion.getText().toString().trim();
-        String tipoStr      = spinnerTipo.getSelectedItem().toString();
+        String titulo = etTitulo.getText().toString().trim();
+        String descripcion = etDescripcion.getText().toString().trim();
+        String tipoStr = spinnerTipo.getSelectedItem().toString();
         String modalidadStr = spModalidad.getSelectedItem().toString();
 
         if (titulo.isEmpty() || descripcion.isEmpty()) {
@@ -639,7 +667,7 @@ public class ProfesionalSessionsFragment extends Fragment
         Calendar primer = (Calendar) mesActual.clone();
         primer.set(Calendar.DAY_OF_MONTH, 1);
 
-        int offset    = (primer.get(Calendar.DAY_OF_WEEK) + 5) % 7;
+        int offset = (primer.get(Calendar.DAY_OF_WEEK) + 5) % 7;
         int diasEnMes = mesActual.getActualMaximum(Calendar.DAY_OF_MONTH);
 
         for (int i = 0; i < offset; i++) {
@@ -659,9 +687,9 @@ public class ProfesionalSessionsFragment extends Fragment
     private View crearCeldaVacia() {
         TextView tv = new TextView(requireContext());
         GridLayout.LayoutParams params = new GridLayout.LayoutParams();
-        params.width      = 0;
+        params.width = 0;
         params.columnSpec = GridLayout.spec(GridLayout.UNDEFINED, 1f);
-        params.height     = dpToPx(40);
+        params.height = dpToPx(40);
         tv.setLayoutParams(params);
         return tv;
     }
@@ -675,9 +703,9 @@ public class ProfesionalSessionsFragment extends Fragment
     private View crearCeldaDia(Calendar dia) {
         TextView tv = new TextView(requireContext());
         GridLayout.LayoutParams params = new GridLayout.LayoutParams();
-        params.width      = 0;
+        params.width = 0;
         params.columnSpec = GridLayout.spec(GridLayout.UNDEFINED, 1f);
-        params.height     = dpToPx(40);
+        params.height = dpToPx(40);
         params.setMargins(2, 2, 2, 2);
         tv.setLayoutParams(params);
         tv.setGravity(Gravity.CENTER);
@@ -755,13 +783,26 @@ public class ProfesionalSessionsFragment extends Fragment
      */
     private boolean esSesionFinalizada(Session sesion, long ahora) {
         if (sesion.getEstado() != EstadoSesion.ACTIVA || sesion.getHoraFin() == null) return false;
-        String[] partes = sesion.getHoraFin().split(":");
-        Calendar fechaFin = Calendar.getInstance();
-        fechaFin.setTimeInMillis(sesion.getFecha());
-        fechaFin.set(Calendar.HOUR_OF_DAY, Integer.parseInt(partes[0]));
-        fechaFin.set(Calendar.MINUTE, Integer.parseInt(partes[1]));
-        fechaFin.set(Calendar.SECOND, 0);
-        return fechaFin.getTimeInMillis() < ahora;
+        return getFechaFinSesion(sesion) < ahora;
+    }
+
+    /**
+     * Calcula el timestamp de fin de una sesión combinando su fecha con su horaFin.
+     * Puerto exacto de getFechaFin() del ClienteSessionsFragment aplicado a Session.
+     *
+     * @param sesion Sesión de la que calcular el timestamp de fin
+     * @return Timestamp epoch en ms del momento de fin de la sesión
+     */
+    private long getFechaFinSesion(Session sesion) {
+        String horaFin = (sesion.getHoraFin() != null) ? sesion.getHoraFin() : "23:59";
+        String[] partes = horaFin.split(":");
+        Calendar cal = Calendar.getInstance();
+        cal.setTimeInMillis(sesion.getFecha());
+        cal.set(Calendar.HOUR_OF_DAY, Integer.parseInt(partes[0]));
+        cal.set(Calendar.MINUTE, Integer.parseInt(partes[1]));
+        cal.set(Calendar.SECOND, 0);
+        cal.set(Calendar.MILLISECOND, 0);
+        return cal.getTimeInMillis();
     }
 
     /**
@@ -816,6 +857,20 @@ public class ProfesionalSessionsFragment extends Fragment
     }
 
     /**
+     * Muestra u oculta el estado vacío de la sección de sesiones pendientes según corresponda.
+     */
+    private void actualizarEstadoVacioPendientes() {
+        if (!isAdded()) return;
+        if (sesionesPendientes.isEmpty()) {
+            recyclerSesionesPendientes.setVisibility(View.GONE);
+            tvSesionesPendientesVacio.setVisibility(View.VISIBLE);
+        } else {
+            recyclerSesionesPendientes.setVisibility(View.VISIBLE);
+            tvSesionesPendientesVacio.setVisibility(View.GONE);
+        }
+    }
+
+    /**
      * Muestra u oculta el estado vacío del historial según corresponda.
      */
     private void actualizarEstadoVacioHistorial() {
@@ -847,7 +902,11 @@ public class ProfesionalSessionsFragment extends Fragment
      * @param valor Cadena del campo EditText de aforoMax
      */
     private int parseAforoMax(String valor) {
-        try { return Integer.parseInt(valor); } catch (Exception e) { return 2; }
+        try {
+            return Integer.parseInt(valor);
+        } catch (Exception e) {
+            return 2;
+        }
     }
 
     /**

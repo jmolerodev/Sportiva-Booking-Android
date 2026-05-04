@@ -1,16 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!--
-    Layout principal del fragment de reservas del cliente.
-    Estructura idéntica a fragment_profesional_sessions.xml:
-      1. Spinner de carga (layoutCargando) visible hasta que ambos listeners completen
-      2. Contenido (layoutContenido) con:
-           - Cabecera logo + título
-           - Calendario navegable mes a mes con cuadrícula 7 columnas
-           - Sección reservas del día seleccionado
-           - Sección reservas pendientes futuras
-           - Sección historial canceladas/finalizadas
-           - Botón volver home
--->
 <ScrollView
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
