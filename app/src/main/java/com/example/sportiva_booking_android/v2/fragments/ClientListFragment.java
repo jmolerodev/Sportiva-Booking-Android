@@ -140,7 +140,7 @@ public class ClientListFragment extends Fragment {
      */
     private void inicializarServicios() {
         membershipService = new MembershipService();
-        clienteService = new ClienteService(requireContext());
+        clienteService    = new ClienteService(requireContext());
     }
 
     /**
@@ -152,16 +152,17 @@ public class ClientListFragment extends Fragment {
      */
     private void inicializarVistas(View view) {
         layoutCargando = view.findViewById(R.id.layoutCargandoClientList);
-        layoutContent = view.findViewById(R.id.layoutContentClientList);
-        layoutVacio = view.findViewById(R.id.layoutVacioClientList);
-        cardPanel = view.findViewById(R.id.cardPanelClientes);
-        rvClientes = view.findViewById(R.id.rvClientes);
-        btnVolverHome = view.findViewById(R.id.btnVolverHomeClientList);
+        layoutContent  = view.findViewById(R.id.layoutContentClientList);
+        layoutVacio    = view.findViewById(R.id.layoutVacioClientList);
+        cardPanel      = view.findViewById(R.id.cardPanelClientes);
+        rvClientes     = view.findViewById(R.id.rvClientes);
+        btnVolverHome  = view.findViewById(R.id.btnVolverHomeClientList);
 
         adapter = new ClienteListAdapter(clientes, this::onDarDeBaja);
         rvClientes.setLayoutManager(new LinearLayoutManager(requireContext()));
         rvClientes.setAdapter(adapter);
 
+        /*Mostramos el spinner mientras cargamos datos*/
         layoutCargando.setVisibility(View.VISIBLE);
         layoutContent.setVisibility(View.GONE);
     }
@@ -257,7 +258,8 @@ public class ClientListFragment extends Fragment {
 
     /**
      * Muestra un Snackbar de confirmación antes de proceder con la baja del cliente.
-     * Si el administrador confirma, se ejecuta el proceso de eliminación en cascada
+     * Si el administrador confirma, se ejecuta el proceso de eliminación en cascada.
+     * Activa el spinner de la fila mientras se procesa la operación
      *
      * @param clienteUid UID del cliente a dar de baja
      */
@@ -275,6 +277,7 @@ public class ClientListFragment extends Fragment {
                 getResources().getColor(android.R.color.holo_red_light, null)
         );
 
+        /*Centramos el texto igual que en el resto de Snackbars*/
         View snackbarView = snackbar.getView();
         TextView textView = snackbarView.findViewById(
                 com.google.android.material.R.id.snackbar_text
@@ -289,12 +292,17 @@ public class ClientListFragment extends Fragment {
 
     /**
      * Ejecuta la baja completa del cliente una vez confirmada por el administrador.
+     * Activa el spinner de la fila durante el proceso y lo desactiva al terminar.
      * El proceso elimina en orden: la membresía activa del cliente
      * y finalmente su nodo en Persons y su cuenta de Firebase Authentication
      *
      * @param clienteUid UID del cliente a eliminar
      */
     private void ejecutarBaja(String clienteUid) {
+
+        /*Activamos el spinner de la fila mientras se procesa*/
+        adapter.setDeletingUid(clienteUid);
+
         /*Paso 1: buscamos la membresía activa del cliente en el centro para obtener su ID*/
         membershipService.getMembresiasByCliente(clienteUid, membresias -> {
             if (!isAdded()) return;
@@ -319,6 +327,9 @@ public class ClientListFragment extends Fragment {
                     /*Actualizamos la lista en memoria sin necesidad de recargar de Firebase*/
                     clientes.removeIf(c -> clienteUid.equals(c.getId()));
                     adapter.notifyDataSetChanged();
+                    adapter.setDeletingUid(null);
+
+                    /*Actualizamos visibilidad: si era el último, se muestra layoutVacio*/
                     actualizarEstadoVista();
 
                     showSnackbar("Cliente dado de baja correctamente");
@@ -327,6 +338,7 @@ public class ClientListFragment extends Fragment {
                 @Override
                 public void onError(String errorMessage) {
                     if (!isAdded()) return;
+                    adapter.setDeletingUid(null);
                     showSnackbar("Error al procesar la baja del cliente");
                 }
             });

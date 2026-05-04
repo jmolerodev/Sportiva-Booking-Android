@@ -6,6 +6,7 @@
     android:background="@color/background">
 
 
+    <!-- Spinner de carga global, centrado en pantalla mientras se obtienen los datos -->
     <LinearLayout
         android:id="@+id/layoutCargandoClientList"
         android:layout_width="match_parent"
@@ -28,9 +29,11 @@
             android:textColor="@color/white"
             android:textSize="16sp"
             android:textStyle="bold" />
+
     </LinearLayout>
 
 
+    <!-- ScrollView raíz del contenido real, oculto hasta que los datos estén listos -->
     <ScrollView
         android:id="@+id/layoutContentClientList"
         android:layout_width="match_parent"
@@ -44,28 +47,40 @@
             android:orientation="vertical"
             android:padding="24dp">
 
+            <!-- Logo centrado, igual que en AdminListFragment -->
+            <ImageView
+                android:layout_width="120dp"
+                android:layout_height="120dp"
+                android:layout_gravity="center"
+                android:layout_marginBottom="16dp"
+                android:scaleType="fitCenter"
+                android:src="@drawable/logo_app" />
 
+            <!-- Título principal centrado -->
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:layout_gravity="center"
                 android:layout_marginBottom="4dp"
-                android:text="GESTIÓN DE CLIENTES"
-                android:textAllCaps="true"
+                android:text="Gestión de Clientes"
                 android:textColor="@color/text"
-                android:textSize="12sp"
+                android:textSize="22sp"
                 android:textStyle="bold" />
 
+            <!-- Subtítulo descriptivo centrado -->
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:layout_gravity="center"
                 android:layout_marginTop="24dp"
                 android:layout_marginBottom="24dp"
-                android:text="Clientes con membresía activa en tu centro"
+                android:text="Clientes con membresía activa en tu centro:"
                 android:textColor="@color/text"
                 android:textStyle="bold"
                 android:textSize="13sp" />
 
 
+            <!-- Card informativo cuando no hay clientes vinculados -->
             <androidx.cardview.widget.CardView
                 android:id="@+id/layoutVacioClientList"
                 android:layout_width="match_parent"
@@ -81,20 +96,19 @@
                     android:layout_height="wrap_content"
                     android:gravity="center"
                     android:orientation="vertical"
-                    android:padding="40dp">
+                    android:padding="32dp">
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginBottom="16dp"
                         android:text="🙍"
-                        android:textSize="52sp" />
+                        android:textSize="48sp" />
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginBottom="8dp"
-                        android:gravity="center"
                         android:text="Aún no tienes clientes vinculados"
                         android:textColor="@color/black"
                         android:textSize="18sp"
@@ -106,18 +120,18 @@
                         android:gravity="center"
                         android:text="Cuando un cliente adquiera una membresía activa en tu centro aparecerá aquí."
                         android:textColor="@color/black"
-                        android:textStyle="bold"
                         android:textSize="14sp" />
 
                 </LinearLayout>
+
             </androidx.cardview.widget.CardView>
 
 
+            <!-- CardView que contiene el Panel de Control y el RecyclerView -->
             <androidx.cardview.widget.CardView
                 android:id="@+id/cardPanelClientes"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="16dp"
                 android:visibility="gone"
                 app:cardBackgroundColor="@color/white"
                 app:cardCornerRadius="20dp"
@@ -127,17 +141,80 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="vertical"
-                    android:padding="20dp">
+                    android:padding="16dp">
 
+                    <!-- Título del panel -->
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="4dp"
+                        android:text="Panel de Control"
+                        android:textColor="@color/black"
+                        android:textSize="20sp"
+                        android:textStyle="bold" />
+
+                    <!-- Subtítulo del panel -->
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginBottom="16dp"
-                        android:text="Clientes activos"
+                        android:text="Clientes con membresía activa en el centro"
                         android:textColor="@color/background"
-                        android:textSize="15sp"
+                        android:textSize="13sp"
                         android:textStyle="bold" />
 
+
+                    <!-- Cabecera de columnas con fondo @color/background, igual que en AdminListFragment -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:background="@color/background"
+                        android:orientation="horizontal"
+                        android:paddingVertical="10dp"
+                        android:paddingHorizontal="8dp">
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="Nombre"
+                            android:textColor="@color/white"
+                            android:textSize="13sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="Apellidos"
+                            android:textColor="@color/white"
+                            android:textSize="13sp"
+                            android:textStyle="bold" />
+
+                        <!-- Columna DNI alineada con la tercera columna de datos -->
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="DNI"
+                            android:textColor="@color/white"
+                            android:textSize="13sp"
+                            android:textStyle="bold" />
+
+                        <!-- Columna Acción alineada con la papelera del adapter (48dp) -->
+                        <TextView
+                            android:layout_width="48dp"
+                            android:layout_height="wrap_content"
+                            android:gravity="center"
+                            android:text="Acción"
+                            android:textColor="@color/white"
+                            android:textSize="13sp"
+                            android:textStyle="bold" />
+
+                    </LinearLayout>
+
+
+                    <!-- RecyclerView con la lista de clientes -->
                     <androidx.recyclerview.widget.RecyclerView
                         android:id="@+id/rvClientes"
                         android:layout_width="match_parent"
@@ -145,14 +222,16 @@
                         android:nestedScrollingEnabled="false" />
 
                 </LinearLayout>
+
             </androidx.cardview.widget.CardView>
 
 
+            <!-- Botón para volver al home, con margen superior generoso -->
             <Button
                 android:id="@+id/btnVolverHomeClientList"
                 android:layout_width="match_parent"
                 android:layout_height="52dp"
-                android:layout_marginTop="8dp"
+                android:layout_marginTop="24dp"
                 android:backgroundTint="@color/black"
                 android:text="Volver al inicio"
                 android:textColor="@color/white"
@@ -160,6 +239,7 @@
                 app:cornerRadius="12dp" />
 
         </LinearLayout>
+
     </ScrollView>
 
 </FrameLayout>
