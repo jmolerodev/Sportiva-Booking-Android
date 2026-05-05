@@ -281,7 +281,7 @@
                         app:errorTextColor="@color/red"
                         app:hintEnabled="false"
                         app:passwordToggleEnabled="true"
-                        app:passwordToggleTint="@color/text">
+                        app:passwordToggleTint="@color/black">
 
                         <com.google.android.material.textfield.TextInputEditText
                             android:id="@+id/etPasswordUM"
@@ -321,7 +321,7 @@
                         app:errorTextColor="@color/red"
                         app:hintEnabled="false"
                         app:passwordToggleEnabled="true"
-                        app:passwordToggleTint="@color/text">
+                        app:passwordToggleTint="@color/black">
 
                         <com.google.android.material.textfield.TextInputEditText
                             android:id="@+id/etConfirmPasswordUM"

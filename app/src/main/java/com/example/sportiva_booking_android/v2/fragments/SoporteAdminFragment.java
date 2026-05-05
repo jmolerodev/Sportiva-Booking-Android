@@ -7,7 +7,6 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageButton;
 import android.widget.LinearLayout;
-import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -24,7 +23,6 @@ import com.example.sportiva_booking_android.v2.enums.Rol;
 import com.example.sportiva_booking_android.v2.models.Mensaje;
 import com.example.sportiva_booking_android.v2.models.SoporteChat;
 import com.example.sportiva_booking_android.v2.services.SoporteService;
-import com.google.android.material.button.MaterialButton;
 import com.google.android.material.snackbar.Snackbar;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.firebase.auth.FirebaseAuth;
@@ -43,23 +41,21 @@ public class SoporteAdminFragment extends Fragment {
     private static final String ARG_ROL = "ROL";
 
     /*Vistas*/
-    private View              layoutCargando;
-    private View              layoutContenido;
-    private ProgressBar       progressBar;
-    private TextView          tvSinChats;
-    private RecyclerView      rvChats;
-    private RecyclerView      rvMensajes;
-    private LinearLayout      panelConversacion;
-    private LinearLayout      layoutAccionesPendiente;
-    private LinearLayout      layoutEnviarMensaje;
-    private MaterialButton    btnAceptar;
-    private MaterialButton    btnRechazar;
-    private MaterialButton    btnCerrarChat;
-    private MaterialButton    btnEliminarChat;
-    private ImageButton       btnEnviar;
-    private TextInputEditText etMensaje;
-    private TextView          tvChatNombreCliente;
-    private TextView          tvChatEstado;
+    private View                  layoutCargando;
+    private View                  layoutContenido;
+    private LinearLayout          layoutSinSolicitudes;
+    private RecyclerView          rvSolicitudes;
+    private LinearLayout          layoutDetalleChat;
+    private TextView              tvNombreCliente;
+    private TextView              tvEstadoChat;
+    private android.widget.Button btnAceptarChat;
+    private ImageButton btnCerrarChat;
+    private ImageButton btnEliminarChat;
+    private LinearLayout          layoutInputAdmin;
+    private RecyclerView          rvMensajesAdmin;
+    private TextInputEditText     etMensajeAdmin;
+    private ImageButton           btnEnviarAdmin;
+    private TextView              tvContadorPendientes;
 
     /*Adaptadores*/
     private ChatAdapter    chatAdapter;
@@ -146,23 +142,21 @@ public class SoporteAdminFragment extends Fragment {
     }
 
     private void inicializarVistas(View view) {
-        layoutCargando          = view.findViewById(R.id.layoutCargandoSoporteAdmin);
-        layoutContenido         = view.findViewById(R.id.layoutContenidoSoporteAdmin);
-        progressBar             = view.findViewById(R.id.progressBar);
-        tvSinChats              = view.findViewById(R.id.tvSinChats);
-        rvChats                 = view.findViewById(R.id.rvChats);
-        rvMensajes              = view.findViewById(R.id.rvMensajes);
-        panelConversacion       = view.findViewById(R.id.panelConversacion);
-        layoutAccionesPendiente = view.findViewById(R.id.layoutAccionesPendiente);
-        layoutEnviarMensaje     = view.findViewById(R.id.layoutEnviarMensaje);
-        btnAceptar              = view.findViewById(R.id.btnAceptar);
-        btnRechazar             = view.findViewById(R.id.btnRechazar);
-        btnCerrarChat           = view.findViewById(R.id.btnCerrarChat);
-        btnEliminarChat         = view.findViewById(R.id.btnEliminarChat);
-        btnEnviar               = view.findViewById(R.id.btnEnviar);
-        etMensaje               = view.findViewById(R.id.etMensaje);
-        tvChatNombreCliente     = view.findViewById(R.id.tvChatNombreCliente);
-        tvChatEstado            = view.findViewById(R.id.tvChatEstado);
+        layoutCargando       = view.findViewById(R.id.layoutCargandoSoporteAdmin);
+        layoutContenido      = view.findViewById(R.id.layoutContenidoSoporteAdmin);
+        layoutSinSolicitudes = view.findViewById(R.id.layoutSinSolicitudes);
+        rvSolicitudes        = view.findViewById(R.id.rvSolicitudes);
+        layoutDetalleChat    = view.findViewById(R.id.layoutDetalleChat);
+        tvNombreCliente      = view.findViewById(R.id.tvNombreCliente);
+        tvEstadoChat         = view.findViewById(R.id.tvEstadoChat);
+        btnAceptarChat       = view.findViewById(R.id.btnAceptarChat);
+        btnCerrarChat        = view.findViewById(R.id.btnCerrarChat);
+        btnEliminarChat      = view.findViewById(R.id.btnEliminarChat);
+        layoutInputAdmin     = view.findViewById(R.id.layoutInputAdmin);
+        rvMensajesAdmin      = view.findViewById(R.id.rvMensajesAdmin);
+        etMensajeAdmin       = view.findViewById(R.id.etMensajeAdmin);
+        btnEnviarAdmin       = view.findViewById(R.id.btnEnviarAdmin);
+        tvContadorPendientes = view.findViewById(R.id.tvContadorPendientes);
 
         /* Arranque con pantalla de carga activa */
         layoutCargando.setVisibility(View.VISIBLE);
@@ -171,12 +165,12 @@ public class SoporteAdminFragment extends Fragment {
 
     private void configurarRecyclers() {
         chatAdapter = new ChatAdapter(this::seleccionarChat);
-        rvChats.setLayoutManager(new LinearLayoutManager(requireContext()));
-        rvChats.setAdapter(chatAdapter);
+        rvSolicitudes.setLayoutManager(new LinearLayoutManager(requireContext()));
+        rvSolicitudes.setAdapter(chatAdapter);
 
         mensajeAdapter = new MensajeAdapter(adminUid != null ? adminUid : "");
-        rvMensajes.setLayoutManager(new LinearLayoutManager(requireContext()));
-        rvMensajes.setAdapter(mensajeAdapter);
+        rvMensajesAdmin.setLayoutManager(new LinearLayoutManager(requireContext()));
+        rvMensajesAdmin.setAdapter(mensajeAdapter);
     }
 
     /**
@@ -210,7 +204,23 @@ public class SoporteAdminFragment extends Fragment {
                                     Integer.compare(ordenEstado(a.getEstado()),
                                             ordenEstado(b.getEstado())));
 
-                            tvSinChats.setVisibility(chats.isEmpty() ? View.VISIBLE : View.GONE);
+                            /* Badge de pendientes */
+                            long pendientes = 0;
+                            for (SoporteChat c : chats)
+                                if (EstadoChat.PENDIENTE.equals(c.getEstado())) pendientes++;
+
+                            if (pendientes > 0) {
+                                tvContadorPendientes.setVisibility(View.VISIBLE);
+                                tvContadorPendientes.setText(pendientes + " pendiente"
+                                        + (pendientes > 1 ? "s" : ""));
+                            } else {
+                                tvContadorPendientes.setVisibility(View.GONE);
+                            }
+
+                            boolean hayChats = !chats.isEmpty();
+                            layoutSinSolicitudes.setVisibility(hayChats ? View.GONE : View.VISIBLE);
+                            rvSolicitudes.setVisibility(hayChats ? View.VISIBLE : View.GONE);
+
                             chatAdapter.submitList(chats);
                             resolverNombresClientes(chats);
 
@@ -237,7 +247,7 @@ public class SoporteAdminFragment extends Fragment {
                                 } else {
                                     /* El chat fue eliminado de Firebase */
                                     chatSeleccionado = null;
-                                    panelConversacion.setVisibility(View.GONE);
+                                    layoutDetalleChat.setVisibility(View.GONE);
                                     pararMensajesListener();
                                 }
                             }
@@ -300,47 +310,35 @@ public class SoporteAdminFragment extends Fragment {
      * el ChildEventListener de mensajes innecesariamente.
      */
     private void seleccionarChat(SoporteChat chat) {
-        android.util.Log.d("SOPORTE_ADMIN", "seleccionarChat() llamado, chat id: " + (chat != null ? chat.getId() : "null"));
-
-        if (chatSeleccionado != null && chatSeleccionado.getId().equals(chat.getId())) {
-            android.util.Log.d("SOPORTE_ADMIN", "Chat ya seleccionado, saliendo");
-            return;
-        }
+        if (chatSeleccionado != null && chatSeleccionado.getId().equals(chat.getId())) return;
 
         chatSeleccionado = chat;
-        android.util.Log.d("SOPORTE_ADMIN", "Chat asignado, estado: " + (chat.getEstado() != null ? chat.getEstado().name() : "null"));
-
-        panelConversacion.setVisibility(View.VISIBLE);
+        layoutDetalleChat.setVisibility(View.VISIBLE);
         mensajeAdapter.submitList(new ArrayList<>());
 
         String nombre = nombresClientes.containsKey(chat.getClienteId())
                 ? nombresClientes.get(chat.getClienteId()) : "Cliente";
-        android.util.Log.d("SOPORTE_ADMIN", "Nombre cliente: " + nombre);
 
-        tvChatNombreCliente.setText(nombre);
-        tvChatEstado.setText(chat.getEstado() != null ? chat.getEstado().name() : "");
+        tvNombreCliente.setText(nombre);
+        tvEstadoChat.setText(chat.getEstado() != null ? chat.getEstado().name() : "");
 
         actualizarBotonesAccion();
-        android.util.Log.d("SOPORTE_ADMIN", "Botones actualizados");
 
         EstadoChat estado = chat.getEstado() != null ? chat.getEstado() : EstadoChat.CERRADO;
-        android.util.Log.d("SOPORTE_ADMIN", "Estado final: " + estado.name());
 
         switch (estado) {
             case ACTIVO:
-                android.util.Log.d("SOPORTE_ADMIN", "Arrancando escucharMensajes");
                 escucharMensajes(chat.getId());
                 break;
             case PENDIENTE:
-                android.util.Log.d("SOPORTE_ADMIN", "Arrancando cargarMensajesPendiente");
                 cargarMensajesPendiente(chat.getId());
                 break;
             case CERRADO:
-                android.util.Log.d("SOPORTE_ADMIN", "Chat cerrado, parando listener");
                 pararMensajesListener();
                 break;
         }
     }
+
     /**
      * Actualiza la visibilidad de los botones de acción según el estado del chat.
      */
@@ -349,25 +347,24 @@ public class SoporteAdminFragment extends Fragment {
 
         EstadoChat estado = chatSeleccionado.getEstado();
 
-        layoutAccionesPendiente.setVisibility(View.GONE);
+        btnAceptarChat.setVisibility(View.GONE);
         btnCerrarChat.setVisibility(View.GONE);
         btnEliminarChat.setVisibility(View.GONE);
-        layoutEnviarMensaje.setVisibility(View.GONE);
+        layoutInputAdmin.setVisibility(View.GONE);
 
         if (estado == null) return;
 
         switch (estado) {
             case PENDIENTE:
-                layoutAccionesPendiente.setVisibility(View.VISIBLE);
-                btnAceptar.setOnClickListener(v -> aceptarChat(chatSeleccionado));
-                btnRechazar.setOnClickListener(v -> confirmarRechazarChat(chatSeleccionado));
+                btnAceptarChat.setVisibility(View.VISIBLE);
+                btnAceptarChat.setOnClickListener(v -> aceptarChat(chatSeleccionado));
                 break;
 
             case ACTIVO:
                 btnCerrarChat.setVisibility(View.VISIBLE);
-                layoutEnviarMensaje.setVisibility(View.VISIBLE);
+                layoutInputAdmin.setVisibility(View.VISIBLE);
                 btnCerrarChat.setOnClickListener(v -> confirmarCerrarChat(chatSeleccionado));
-                btnEnviar.setOnClickListener(v -> enviarMensaje(chatSeleccionado.getId()));
+                btnEnviarAdmin.setOnClickListener(v -> enviarMensaje(chatSeleccionado.getId()));
                 break;
 
             case CERRADO:
@@ -395,7 +392,7 @@ public class SoporteAdminFragment extends Fragment {
                         getActivity().runOnUiThread(() -> {
                             mensajeAdapter.submitList(mensajes);
                             if (!mensajes.isEmpty())
-                                rvMensajes.scrollToPosition(mensajes.size() - 1);
+                                rvMensajesAdmin.scrollToPosition(mensajes.size() - 1);
                         });
                     }
                     @Override
@@ -445,29 +442,6 @@ public class SoporteAdminFragment extends Fragment {
         });
     }
 
-    private void confirmarRechazarChat(SoporteChat chat) {
-        if (getView() == null) return;
-        Snackbar snackbar = Snackbar.make(
-                getView(),
-                "¿Confirmas el rechazo de esta solicitud de soporte?",
-                Snackbar.LENGTH_LONG);
-        snackbar.setAction("RECHAZAR", v ->
-                soporteService.rechazarChat(chat.getId(), new SoporteService.WriteCallback() {
-                    @Override public void onExito() {
-                        if (!isAdded()) return;
-                        showSnackbar("Solicitud rechazada");
-                    }
-                    @Override public void onError(String msg) {
-                        if (!isAdded()) return;
-                        showSnackbar("Error al rechazar el chat");
-                    }
-                }));
-        snackbar.setActionTextColor(
-                getResources().getColor(android.R.color.holo_red_light, null));
-        centrarTextoSnackbar(snackbar);
-        snackbar.show();
-    }
-
     private void confirmarCerrarChat(SoporteChat chat) {
         if (getView() == null) return;
         Snackbar snackbar = Snackbar.make(
@@ -505,7 +479,7 @@ public class SoporteAdminFragment extends Fragment {
                                 chatSeleccionado.getId().equals(chat.getId())) {
                             pararMensajesListener();
                             chatSeleccionado = null;
-                            panelConversacion.setVisibility(View.GONE);
+                            layoutDetalleChat.setVisibility(View.GONE);
                             mensajeAdapter.submitList(new ArrayList<>());
                         }
                         showSnackbar("Chat eliminado");
@@ -522,14 +496,14 @@ public class SoporteAdminFragment extends Fragment {
     }
 
     private void enviarMensaje(String chatId) {
-        if (etMensaje.getText() == null || adminUid == null) return;
-        String texto = etMensaje.getText().toString().trim();
+        if (etMensajeAdmin.getText() == null || adminUid == null) return;
+        String texto = etMensajeAdmin.getText().toString().trim();
         if (texto.isEmpty()) return;
 
         soporteService.enviarMensaje(chatId, adminUid, texto, new SoporteService.WriteCallback() {
             @Override public void onExito() {
                 if (!isAdded()) return;
-                etMensaje.setText("");
+                etMensajeAdmin.setText("");
             }
             @Override public void onError(String msg) {
                 if (!isAdded()) return;

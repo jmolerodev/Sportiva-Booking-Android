@@ -5,6 +5,7 @@ import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
@@ -45,7 +46,6 @@ public class SoporteClienteFragment extends Fragment {
     private static final String ARG_ADMIN_ID     = "adminId";
     private static final String ARG_NOMBRE_ADMIN = "nombreAdmin";
 
-    /*Vistas*/
     private View              layoutCargando;
     private View              layoutContenido;
     private LinearLayout      layoutSinMembresia;
@@ -55,23 +55,20 @@ public class SoporteClienteFragment extends Fragment {
     private LinearLayout      layoutChatCerrado;
     private TextInputEditText etPrimerMensaje;
     private TextInputEditText etMensaje;
-    private MaterialButton    btnEnviarSolicitud;
-    private MaterialButton    btnNuevaSolicitud;
+    private Button btnEnviarSolicitud;
+    private Button    btnNuevaSolicitud;
     private ImageButton       btnEnviar;
     private RecyclerView      rvMensajes;
     private RecyclerView      rvMensajesPendiente;
     private TextView          tvNombreAdmin;
 
-    /*Adaptadores*/
     private MensajeAdapter mensajeAdapter;
     private MensajeAdapter mensajePendienteAdapter;
 
-    /*Servicios*/
-    private SoporteService    soporteService;
-    private MembershipService membershipService;
+    private SoporteService     soporteService;
+    private MembershipService  membershipService;
     private SportCentreService sportCentreService;
 
-    /*Estado*/
     private Rol         rolUsuarioLogueado;
     private String      clienteUid;
     private String      centroId;
@@ -79,19 +76,12 @@ public class SoporteClienteFragment extends Fragment {
     private String      nombreAdmin;
     private SoporteChat chatActual;
 
-    /*Guard: evita destruir el ChildEventListener al re-emitir fechaUltimoMensaje*/
     private String chatIdEscuchando;
 
-    /*Listeners Firebase (cancelados en onDestroyView)*/
     private ValueEventListener chatsListener;
     private ChildEventListener mensajesListener;
 
 
-
-    /**
-     * Método de factoría para abrir desde el menú lateral del cliente (sin centro previo).
-     * En este caso el fragment busca la membresía activa por su cuenta.
-     */
     public static SoporteClienteFragment newInstance(Rol rol) {
         SoporteClienteFragment fragment = new SoporteClienteFragment();
         Bundle args = new Bundle();
@@ -100,10 +90,6 @@ public class SoporteClienteFragment extends Fragment {
         return fragment;
     }
 
-    /**
-     * Método de factoría para abrir desde SportCentreDetailFragment.
-     * Recibe centroId, adminId y nombreAdmin ya resueltos para no tener que buscarlos.
-     */
     public static SoporteClienteFragment newInstanceFromCentro(Rol rol,
                                                                String centroId,
                                                                String adminId,
@@ -130,7 +116,6 @@ public class SoporteClienteFragment extends Fragment {
     public void onViewCreated(@NonNull View view,
                               @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
-
         recuperarArgumentos();
         inicializarServicios();
         inicializarVistas(view);
@@ -144,8 +129,6 @@ public class SoporteClienteFragment extends Fragment {
         soporteService.cancelarListenerChats(chatsListener);
         pararMensajesListener();
     }
-
-    /*Inicialización*/
 
     private void recuperarArgumentos() {
         if (getArguments() != null) {
@@ -171,23 +154,22 @@ public class SoporteClienteFragment extends Fragment {
     }
 
     private void inicializarVistas(View view) {
-        layoutCargando          = view.findViewById(R.id.layoutCargandoSoporteCliente);
-        layoutContenido         = view.findViewById(R.id.layoutContenidoSoporteCliente);
-        layoutSinMembresia      = view.findViewById(R.id.layoutSinMembresia);
-        layoutSolicitarChat     = view.findViewById(R.id.layoutSolicitarChat);
-        layoutChatPendiente     = view.findViewById(R.id.layoutChatPendiente);
-        layoutChatActivo        = view.findViewById(R.id.layoutChatActivo);
-        layoutChatCerrado       = view.findViewById(R.id.layoutChatCerrado);
-        etPrimerMensaje         = view.findViewById(R.id.etPrimerMensaje);
-        etMensaje               = view.findViewById(R.id.etMensaje);
-        btnEnviarSolicitud      = view.findViewById(R.id.btnEnviarSolicitud);
-        btnNuevaSolicitud       = view.findViewById(R.id.btnNuevaSolicitud);
-        btnEnviar               = view.findViewById(R.id.btnEnviar);
-        rvMensajes              = view.findViewById(R.id.rvMensajes);
-        rvMensajesPendiente     = view.findViewById(R.id.rvMensajesPendiente);
-        tvNombreAdmin           = view.findViewById(R.id.tvNombreAdmin);
+        layoutCargando      = view.findViewById(R.id.layoutCargandoSoporteCliente);
+        layoutContenido     = view.findViewById(R.id.layoutContenidoSoporteCliente);
+        layoutSinMembresia  = view.findViewById(R.id.layoutSinMembresia);
+        layoutSolicitarChat = view.findViewById(R.id.layoutSolicitarChat);
+        layoutChatPendiente = view.findViewById(R.id.layoutChatPendiente);
+        layoutChatActivo    = view.findViewById(R.id.layoutChatActivo);
+        layoutChatCerrado   = view.findViewById(R.id.layoutChatCerrado);
+        etPrimerMensaje     = view.findViewById(R.id.etPrimerMensaje);
+        etMensaje           = view.findViewById(R.id.etMensaje);
+        btnEnviarSolicitud  = view.findViewById(R.id.btnEnviarSolicitud);
+        btnNuevaSolicitud   = view.findViewById(R.id.btnNuevaSolicitud);
+        btnEnviar           = view.findViewById(R.id.btnEnviar);
+        rvMensajes          = view.findViewById(R.id.rvMensajes);
+        rvMensajesPendiente = view.findViewById(R.id.rvMensajesPendiente);
+        tvNombreAdmin       = view.findViewById(R.id.tvNombreAdmin);
 
-        /* Arranque con pantalla de carga activa */
         layoutCargando.setVisibility(View.VISIBLE);
         layoutContenido.setVisibility(View.GONE);
     }
@@ -204,10 +186,6 @@ public class SoporteClienteFragment extends Fragment {
         rvMensajesPendiente.setAdapter(mensajePendienteAdapter);
     }
 
-    /**
-     * Decide el flujo de inicialización según si ya tenemos centroId (navegación
-     * desde SportCentreDetail) o si hay que buscarlo en la membresía activa.
-     */
     private void inicializarCarga() {
         if (clienteUid == null) {
             mostrarContenido();
@@ -216,21 +194,14 @@ public class SoporteClienteFragment extends Fragment {
         }
 
         if (centroId != null && adminId != null) {
-            /* Datos ya resueltos por SportCentreDetailFragment */
             if (nombreAdmin != null && tvNombreAdmin != null)
                 tvNombreAdmin.setText(nombreAdmin);
             escucharChats();
         } else {
-            /* Sin datos → buscamos la membresía activa del cliente */
             cargarMembresiaYChat();
         }
     }
 
-    /**
-     * Consulta la membresía activa del cliente para obtener centroId y adminId.
-     * Una vez resueltos inicia la escucha de chats.
-     * Equivalente a cargarMembresiaYChat() del componente Angular.
-     */
     private void cargarMembresiaYChat() {
         membershipService.getMembresiasByCliente(clienteUid,
                 new MembershipService.MembershipListCallback() {
@@ -268,17 +239,12 @@ public class SoporteClienteFragment extends Fragment {
                 });
     }
 
-    /**
-     * Consulta el centro deportivo para obtener el adminUid y resolver su nombre
-     * desde el nodo Persons. Equivalente a resolverNombreAdmin() del componente Angular.
-     */
     private void resolverNombreAdmin(String cId) {
         sportCentreService.getSportCentreByUid(cId, centro -> {
             if (getActivity() == null || centro == null) return;
             getActivity().runOnUiThread(() -> {
                 adminId = centro.getAdminUid();
 
-                /* Resolvemos el nombre completo desde Persons */
                 com.google.firebase.database.FirebaseDatabase.getInstance()
                         .getReference("Persons")
                         .child(adminId).get()
@@ -298,12 +264,6 @@ public class SoporteClienteFragment extends Fragment {
         });
     }
 
-
-    /**
-     * Escucha en tiempo real los chats del cliente filtrados por centroId.
-     * Prioriza PENDIENTE/ACTIVO sobre CERRADO.
-     * Detecta la transición PENDIENTE → ACTIVO para notificar al cliente.
-     */
     private void escucharChats() {
         chatsListener = soporteService.escucharChatsByCliente(clienteUid,
                 new SoporteService.ChatsCallback() {
@@ -312,14 +272,12 @@ public class SoporteClienteFragment extends Fragment {
                         if (getActivity() == null) return;
                         getActivity().runOnUiThread(() -> {
 
-                            /* Filtramos por este centro */
                             List<SoporteChat> delCentro = new ArrayList<>();
                             for (SoporteChat c : chats) {
                                 if (centroId != null && centroId.equals(c.getCentroId()))
                                     delCentro.add(c);
                             }
 
-                            /* Priorizamos PENDIENTE o ACTIVO */
                             SoporteChat abierto = null;
                             for (SoporteChat c : delCentro) {
                                 if (EstadoChat.PENDIENTE.equals(c.getEstado())
@@ -335,7 +293,6 @@ public class SoporteClienteFragment extends Fragment {
                                             ? delCentro.get(delCentro.size() - 1)
                                             : null);
 
-                            /* Primer arranque con chat ya ACTIVO */
                             if (chatActual != null &&
                                     EstadoChat.ACTIVO.equals(chatActual.getEstado())
                                     && anterior == null) {
@@ -345,7 +302,6 @@ public class SoporteClienteFragment extends Fragment {
                                 return;
                             }
 
-                            /* Transición PENDIENTE → ACTIVO en tiempo real */
                             if (anterior != null &&
                                     EstadoChat.PENDIENTE.equals(anterior.getEstado()) &&
                                     chatActual != null &&
@@ -370,9 +326,6 @@ public class SoporteClienteFragment extends Fragment {
                 });
     }
 
-    /**
-     * Muestra el layout correspondiente al estado actual del chat.
-     */
     private void mostrarEstadoChat() {
         if (chatActual == null) {
             mostrarLayout(layoutSolicitarChat);
@@ -409,11 +362,8 @@ public class SoporteClienteFragment extends Fragment {
         }
     }
 
-    /**
-     * Inicia la escucha en tiempo real de mensajes con el guard chatIdEscuchando.
-     */
     private void escucharMensajes(String chatId) {
-        if (chatId.equals(chatIdEscuchando)) return; /* guard clave */
+        if (chatId.equals(chatIdEscuchando)) return;
 
         pararMensajesListener();
         chatIdEscuchando = chatId;
@@ -430,13 +380,10 @@ public class SoporteClienteFragment extends Fragment {
                         });
                     }
                     @Override
-                    public void onError(String mensaje) { /* silencioso */ }
+                    public void onError(String mensaje) {}
                 });
     }
 
-    /**
-     * Carga puntual de mensajes para el estado PENDIENTE (sin listener continuo).
-     */
     private void cargarMensajesPendiente(String chatId) {
         pararMensajesListener();
         chatIdEscuchando = chatId;
@@ -450,7 +397,7 @@ public class SoporteClienteFragment extends Fragment {
                                 mensajePendienteAdapter.submitList(mensajes));
                     }
                     @Override
-                    public void onError(String mensaje) { /* silencioso */ }
+                    public void onError(String mensaje) {}
                 });
     }
 
@@ -460,8 +407,6 @@ public class SoporteClienteFragment extends Fragment {
         mensajesListener = null;
         chatIdEscuchando = null;
     }
-
-    /* ── Acciones ─────────────────────────────────────────────────────── */
 
     private void solicitarChat() {
         if (etPrimerMensaje.getText() == null) return;
@@ -512,12 +457,6 @@ public class SoporteClienteFragment extends Fragment {
         });
     }
 
-
-
-    /**
-     * Muestra únicamente el layout indicado y oculta todos los demás.
-     * Acepta View para poder recibir tanto LinearLayout como ScrollView.
-     */
     private void mostrarLayout(View visible) {
         layoutSinMembresia.setVisibility(View.GONE);
         layoutSolicitarChat.setVisibility(View.GONE);
