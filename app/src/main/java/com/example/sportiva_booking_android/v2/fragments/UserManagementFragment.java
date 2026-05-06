@@ -91,6 +91,16 @@ public class UserManagementFragment extends Fragment {
         return fragment;
     }
 
+    /**
+     * Infla el layout del fragment sin inicializar vistas todavía.
+     * La inicialización real ocurre en {@link #onViewCreated} una vez que
+     * la jerarquía de vistas está completamente construida.
+     *
+     * @param inflater           Inflater proporcionado por el sistema
+     * @param container          ViewGroup padre al que se adjuntará el fragment
+     * @param savedInstanceState Estado previo del fragment, si existe
+     * @return Vista raíz del fragment
+     */
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater,
@@ -99,6 +109,19 @@ public class UserManagementFragment extends Fragment {
         return inflater.inflate(R.layout.fragment_user_management, container, false);
     }
 
+    /**
+     * Punto de entrada principal del fragment una vez que la vista está lista.
+     * Inicializa Firebase, vistas y servicios; luego decide el flujo de navegación
+     * interno según el rol del usuario logueado:
+     * <ul>
+     *   <li>ROOT — accede directamente al formulario sin verificaciones previas.</li>
+     *   <li>ADMINISTRADOR — pasa primero por {@link #verificarCentroDeportivo()} para
+     *       comprobar si tiene un centro registrado antes de mostrar el formulario.</li>
+     * </ul>
+     *
+     * @param view               Vista raíz devuelta por {@link #onCreateView}
+     * @param savedInstanceState Estado previo del fragment, si existe
+     */
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
@@ -151,6 +174,7 @@ public class UserManagementFragment extends Fragment {
 
     /**
      * Recupera el rol del Bundle de argumentos.
+     * Si el Bundle es nulo o contiene un valor desconocido, se asigna ROOT como fallback seguro.
      */
     private void recuperarRol() {
         if (getArguments() != null) {
@@ -168,6 +192,10 @@ public class UserManagementFragment extends Fragment {
 
     /**
      * Enlaza todas las vistas del layout con sus variables.
+     * Tras resolver las referencias, delega en {@link #cargarEspecialidades()}
+     * para poblar el desplegable de especialidades.
+     *
+     * @param view Vista raíz del fragment desde la que se resuelven los IDs
      */
     private void inicializarVistas(View view) {
 
@@ -201,6 +229,14 @@ public class UserManagementFragment extends Fragment {
         cargarEspecialidades();
     }
 
+    /**
+     * Adapta el título y la visibilidad de la sección de campos exclusivos de Profesional
+     * según el rol del usuario logueado:
+     * <ul>
+     *   <li>ROOT — título "Alta de Administradores", sección profesional oculta.</li>
+     *   <li>ADMINISTRADOR — título "Alta de Profesionales", sección profesional visible.</li>
+     * </ul>
+     */
     private void configurarSegunRol() {
         if (rolUsuarioLogueado == Rol.ROOT) {
             tvTitulo.setText("Alta de Administradores");
@@ -211,6 +247,10 @@ public class UserManagementFragment extends Fragment {
         }
     }
 
+    /**
+     * Puebla el AutoCompleteTextView de especialidades con los valores del enum {@link Especialidad}.
+     * Usa el layout estándar de Material para los ítems del desplegable.
+     */
     private void cargarEspecialidades() {
         Especialidad[] valores = Especialidad.values();
         String[] nombres = new String[valores.length];
@@ -280,6 +320,22 @@ public class UserManagementFragment extends Fragment {
         layoutFormulario.setVisibility(View.GONE);
     }
 
+    /**
+     * Orquesta el proceso completo de alta de un nuevo usuario.
+     * <p>
+     * Flujo:
+     * <ol>
+     *   <li>Recoge y valida los campos del formulario base.</li>
+     *   <li>Si el rol es ADMINISTRADOR, valida también los campos exclusivos de Profesional
+     *       y comprueba que {@code centroIdActual} no sea nulo.</li>
+     *   <li>Si todas las validaciones pasan, crea la cuenta en Firebase Auth usando la
+     *       instancia secundaria para no alterar la sesión activa.</li>
+     *   <li>Tras obtener el UID del nuevo usuario, delega en {@link #guardarAdministrador}
+     *       o {@link #guardarProfesional} según el rol.</li>
+     * </ol>
+     * Si ya hay una operación en curso ({@code isLoading == true}), el método retorna
+     * inmediatamente para evitar doble envío.
+     */
     private void crearUsuario() {
         if (isLoading) return;
 
@@ -345,6 +401,17 @@ public class UserManagementFragment extends Fragment {
                 });
     }
 
+    /**
+     * Construye el objeto {@link Administrador} y lo persiste en el nodo {@code Persons} de
+     * Firebase Realtime Database usando el UID como clave.
+     * <p>
+     * Tras una escritura exitosa navega al HomeFragment; en caso de error reactiva
+     * el botón de confirmación mediante {@link #resetLoading()}.
+     *
+     * @param uid       UID asignado por Firebase Auth al nuevo administrador
+     * @param nombre    Nombre introducido en el formulario
+     * @param apellidos Apellidos introducidos en el formulario
+     */
     private void guardarAdministrador(String uid, String nombre, String apellidos) {
         Administrador nuevoAdmin = new Administrador();
         nuevoAdmin.setNombre(nombre);
@@ -368,6 +435,14 @@ public class UserManagementFragment extends Fragment {
      * Vincula directamente adminId y centroId en el momento del alta,
      * replicando el comportamiento del controlador Angular donde ambos campos
      * se asignan antes de llamar a saveProfesional().
+     *
+     * @param uid         UID asignado por Firebase Auth al nuevo profesional
+     * @param nombre      Nombre introducido en el formulario
+     * @param apellidos   Apellidos introducidos en el formulario
+     * @param descripcion Descripción profesional introducida en el formulario
+     * @param annosExp    Años de experiencia introducidos en el formulario
+     * @param especialidad Especialidad seleccionada en el desplegable
+     * @param adminId     UID del administrador que realiza el alta; se vincula al profesional
      */
     private void guardarProfesional(String uid, String nombre, String apellidos,
                                     String descripcion, int annosExp,
@@ -397,6 +472,21 @@ public class UserManagementFragment extends Fragment {
                 });
     }
 
+    /**
+     * Valida los campos comunes a todos los roles: nombre, apellidos, email,
+     * contraseña y confirmación de contraseña.
+     * <p>
+     * Marca los errores directamente sobre los {@link TextInputLayout} correspondientes
+     * para que sean visibles de forma simultánea al usuario.
+     * La validación de formato de contraseña se delega en {@link #validarPassword(String)}.
+     *
+     * @param nombre          Valor del campo nombre
+     * @param apellidos       Valor del campo apellidos
+     * @param email           Valor del campo email
+     * @param password        Valor del campo contraseña
+     * @param confirmPassword Valor del campo confirmación de contraseña
+     * @return {@code true} si todos los campos base son válidos; {@code false} en caso contrario
+     */
     private boolean validarFormularioBase(String nombre, String apellidos, String email,
                                           String password, String confirmPassword) {
         boolean valido = true;
@@ -441,6 +531,14 @@ public class UserManagementFragment extends Fragment {
         return valido;
     }
 
+    /**
+     * Valida los campos exclusivos del formulario de Profesional:
+     * descripción, años de experiencia y especialidad.
+     * <p>
+     * Marca los errores directamente sobre los {@link TextInputLayout} correspondientes.
+     *
+     * @return {@code true} si todos los campos de profesional son válidos; {@code false} en caso contrario
+     */
     private boolean validarCamposProfesional() {
         boolean valido = true;
         String descripcion = etDescripcion.getText().toString().trim();
@@ -465,6 +563,17 @@ public class UserManagementFragment extends Fragment {
         return valido;
     }
 
+    /**
+     * Comprueba que la contraseña cumpla los requisitos de seguridad mínimos:
+     * al menos 9 caracteres, una mayúscula, una minúscula, un dígito y un carácter especial.
+     * <p>
+     * Acumula todos los requisitos incumplidos en un único mensaje para que el usuario
+     * pueda corregirlos de una sola vez.
+     *
+     * @param password Contraseña a validar
+     * @return Mensaje de error con los requisitos no cumplidos,
+     *         o {@code null} si la contraseña es válida
+     */
     private String validarPassword(String password) {
         StringBuilder errores = new StringBuilder();
 
@@ -482,6 +591,20 @@ public class UserManagementFragment extends Fragment {
         return null;
     }
 
+    /**
+     * Interpreta la excepción de Firebase Auth y muestra al usuario un mensaje
+     * comprensible según el código de error recibido.
+     * <p>
+     * Códigos contemplados:
+     * <ul>
+     *   <li>{@code ERROR_EMAIL_ALREADY_IN_USE} — el correo ya existe en Firebase.</li>
+     *   <li>{@code ERROR_INVALID_EMAIL} — el correo tiene un formato inválido según Firebase.</li>
+     * </ul>
+     * Cualquier otro código desconocido se muestra con su identificador técnico como fallback,
+     * lo que facilita la detección de casos nuevos durante el desarrollo.
+     *
+     * @param exception Excepción lanzada por Firebase Auth tras el fallo en el registro
+     */
     private void gestionarErrorFirebase(Exception exception) {
         String mensaje = "Error en el registro. Inténtalo de nuevo";
 
@@ -510,6 +633,11 @@ public class UserManagementFragment extends Fragment {
         showCenteredSnackbar(mensaje);
     }
 
+    /**
+     * Elimina los mensajes de error de todos los {@link TextInputLayout} del formulario.
+     * Se invoca al comienzo de {@link #crearUsuario()} para limpiar el estado visual
+     * antes de ejecutar una nueva ronda de validaciones.
+     */
     private void limpiarErrores() {
         tilNombre.setError(null);
         tilApellidos.setError(null);
@@ -521,6 +649,11 @@ public class UserManagementFragment extends Fragment {
         tilEspecialidad.setError(null);
     }
 
+    /**
+     * Reactiva el botón de confirmación y restablece el flag de carga.
+     * Se llama cuando una operación asíncrona falla para que el usuario
+     * pueda reintentar sin tener que salir del formulario.
+     */
     private void resetLoading() {
         isLoading = false;
         btnConfirmar.setEnabled(true);
@@ -552,6 +685,13 @@ public class UserManagementFragment extends Fragment {
         requireActivity().getSupportFragmentManager().popBackStack();
     }
 
+    /**
+     * Muestra un {@link Snackbar} con el texto centrado horizontalmente.
+     * Centralizar el texto mejora la legibilidad en pantallas anchas y mantiene
+     * la coherencia visual con el resto de la aplicación.
+     *
+     * @param message Mensaje a mostrar al usuario
+     */
     private void showCenteredSnackbar(String message) {
         Snackbar snackbar = Snackbar.make(requireView(), message, Snackbar.LENGTH_LONG);
         TextView textView = snackbar.getView().findViewById(

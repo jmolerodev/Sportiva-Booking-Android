@@ -592,8 +592,7 @@ public class ProfesionalSessionsFragment extends Fragment
     /**
      * Muestra un Snackbar de confirmación antes de cancelar la sesión.
      * Actualiza únicamente el campo estado a CANCELADA sin borrar el nodo
-     * para que la sesión caiga al historial.
-     * TODO: cancelar en cascada las reservas asociadas con BookingService
+     * para que la sesión caiga al historial
      *
      * @param sesion Sesión activa a cancelar
      */

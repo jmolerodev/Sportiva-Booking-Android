@@ -55,7 +55,7 @@ public class ClienteSessionsFragment extends Fragment
 
     private static final String ARG_ROL = "ROL";
 
-    /* ── Vistas ──────────────────────────────────────────────────────── */
+    /*Vistas*/
     private android.widget.LinearLayout layoutCargando;
     private android.widget.LinearLayout layoutContenido;
     private ImageButton                 btnMesAnterior;
@@ -71,11 +71,11 @@ public class ClienteSessionsFragment extends Fragment
     private RecyclerView                recyclerHistorial;
     private Button                      btnVolverHome;
 
-    /* ── Servicios ───────────────────────────────────────────────────── */
+    /*Servicios*/
     private BookingService bookingService;
     private SessionService sessionService;
 
-    /* ── Estado ──────────────────────────────────────────────────────── */
+    /*Estado*/
     private Rol    rolUsuario;
     private String clienteUid;
 
@@ -92,7 +92,7 @@ public class ClienteSessionsFragment extends Fragment
     private final List<Booking> todasLasReservas = new ArrayList<>();
 
     /* Listas derivadas que se pasan a los adapters */
-    private final List<Booking> reservasDelDia   = new ArrayList<>();
+    private final List<Booking> reservasDelDia    = new ArrayList<>();
     private final List<Booking> reservasPendientes = new ArrayList<>();
     private final List<Booking> reservasHistorial  = new ArrayList<>();
 
@@ -102,7 +102,7 @@ public class ClienteSessionsFragment extends Fragment
      */
     private final Set<String> diasConReserva = new HashSet<>();
 
-    /* Adapters */
+    /*Adapters*/
     private ReservasDiaAdapter        adapterDia;
     private ReservasPendientesAdapter adapterPendientes;
     private ReservasHistorialAdapter  adapterHistorial;
@@ -118,16 +118,14 @@ public class ClienteSessionsFragment extends Fragment
      * Flags de carga asíncrona — equivalen a loadingReservas / loadingSesiones
      * del componente Angular. El spinner se oculta solo cuando ambos son false.
      */
-    private boolean loadingReservas  = true;
-    private boolean loadingSesiones  = true;
+    private boolean loadingReservas = true;
+    private boolean loadingSesiones = true;
 
     private final SimpleDateFormat sdfMes =
             new SimpleDateFormat("MMMM yyyy", new Locale("es", "ES"));
     private final SimpleDateFormat sdfDia =
             new SimpleDateFormat("EEEE d 'de' MMMM", new Locale("es", "ES"));
 
-
-    /* ── Factoría ────────────────────────────────────────────────────── */
 
     /**
      * Método de factoría. Pasamos el rol por Bundle igual que el resto de fragments.
@@ -144,8 +142,16 @@ public class ClienteSessionsFragment extends Fragment
     }
 
 
-    /* ── Ciclo de vida ───────────────────────────────────────────────── */
-
+    /**
+     * Infla el layout del fragment sin inicializar vistas todavía.
+     * La inicialización real ocurre en {@link #onViewCreated} una vez que
+     * la jerarquía de vistas está completamente construida.
+     *
+     * @param inflater           Inflater proporcionado por el sistema
+     * @param container          ViewGroup padre al que se adjuntará el fragment
+     * @param savedInstanceState Estado previo del fragment, si existe
+     * @return Vista raíz del fragment
+     */
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater,
@@ -154,6 +160,15 @@ public class ClienteSessionsFragment extends Fragment
         return inflater.inflate(R.layout.fragment_cliente_sessions, container, false);
     }
 
+    /**
+     * Punto de entrada principal del fragment una vez que la vista está lista.
+     * Recupera el rol y el UID del cliente, inicializa servicios, vistas, adapters
+     * y listeners de UI, genera el calendario del mes actual y arranca ambos
+     * listeners de Firebase si hay sesión activa.
+     *
+     * @param view               Vista raíz devuelta por {@link #onCreateView}
+     * @param savedInstanceState Estado previo del fragment, si existe
+     */
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
@@ -193,7 +208,6 @@ public class ClienteSessionsFragment extends Fragment
     }
 
 
-    /* ── Inicialización ──────────────────────────────────────────────── */
 
     /**
      * Recupera el rol del Bundle de argumentos.
@@ -213,11 +227,20 @@ public class ClienteSessionsFragment extends Fragment
         }
     }
 
+    /**
+     * Instancia los servicios necesarios para consultar reservas y sesiones en Firebase.
+     */
     private void inicializarServicios() {
         bookingService = new BookingService();
         sessionService = new SessionService();
     }
 
+    /**
+     * Enlaza todas las vistas del layout con sus variables y establece
+     * el estado inicial de visibilidad: pantalla de carga activa y contenido oculto.
+     *
+     * @param view Vista raíz del fragment desde la que se resuelven los IDs
+     */
     private void inicializarVistas(View view) {
         layoutCargando      = view.findViewById(R.id.layoutCargandoClienteSessions);
         layoutContenido     = view.findViewById(R.id.layoutContenidoClienteSessions);
@@ -238,6 +261,16 @@ public class ClienteSessionsFragment extends Fragment
         layoutContenido.setVisibility(View.GONE);
     }
 
+    /**
+     * Configura los tres RecyclerView del fragment:
+     * <ul>
+     *   <li>{@code recyclerReservasDia} — reservas confirmadas del día seleccionado.</li>
+     *   <li>{@code recyclerPendientes} — reservas confirmadas futuras del cliente.</li>
+     *   <li>{@code recyclerHistorial} — reservas pasadas o canceladas.</li>
+     * </ul>
+     * Todos los adapters reciben las listas de sesiones para enriquecer cada reserva
+     * cruzando por {@code sesionId} en el momento del bind.
+     */
     private void configurarRecyclers() {
         adapterDia = new ReservasDiaAdapter(reservasDelDia, todasLasSesiones, this);
         recyclerReservasDia.setLayoutManager(new LinearLayoutManager(requireContext()));
@@ -252,6 +285,13 @@ public class ClienteSessionsFragment extends Fragment
         recyclerHistorial.setAdapter(adapterHistorial);
     }
 
+    /**
+     * Asocia los listeners de los botones de navegación del calendario y del botón
+     * de volver al Home.
+     * <p>
+     * Al cambiar de mes también se actualiza la fecha seleccionada al primer día
+     * del nuevo mes y se reconstruyen las reservas del día para reflejar el cambio.
+     */
     private void configurarListeners() {
         btnMesAnterior.setOnClickListener(v -> {
             mesActual.add(Calendar.MONTH, -1);
@@ -274,8 +314,6 @@ public class ClienteSessionsFragment extends Fragment
         });
     }
 
-
-    /* ── Listeners Firebase ──────────────────────────────────────────── */
 
     /**
      * Escucha en tiempo real todas las sesiones.
@@ -330,8 +368,6 @@ public class ClienteSessionsFragment extends Fragment
                 });
     }
 
-
-    /* ── Reconstrucción de vistas ────────────────────────────────────── */
 
     /**
      * Punto de entrada central que reconstruye todas las vistas derivadas.
@@ -423,7 +459,6 @@ public class ClienteSessionsFragment extends Fragment
     }
 
 
-    /* ── Acciones del cliente ────────────────────────────────────────── */
 
     /**
      * Cancela una reserva confirmada con Snackbar de confirmación.
@@ -493,8 +528,6 @@ public class ClienteSessionsFragment extends Fragment
     }
 
 
-    /* ── Calendario ──────────────────────────────────────────────────── */
-
     /**
      * Genera la cuadrícula del calendario para el mes actual.
      * Equivale a generarCalendario() del componente Angular.
@@ -524,6 +557,12 @@ public class ClienteSessionsFragment extends Fragment
         }
     }
 
+    /**
+     * Crea una celda vacía de relleno para alinear el primer día del mes
+     * con su columna correcta dentro del GridLayout.
+     *
+     * @return TextView vacío con las dimensiones estándar de celda
+     */
     private View crearCeldaVacia() {
         TextView tv = new TextView(requireContext());
         GridLayout.LayoutParams params = new GridLayout.LayoutParams();
@@ -534,6 +573,16 @@ public class ClienteSessionsFragment extends Fragment
         return tv;
     }
 
+    /**
+     * Crea la celda visual de un día concreto del calendario.
+     * Aplica los estilos correspondientes según su estado: hoy, seleccionado o pasado.
+     * Si el día tiene al menos una reserva CONFIRMADA añade el indicador {@code dot_sesion}
+     * bajo el número. Al pulsarlo actualiza la fecha seleccionada y reconstruye las
+     * reservas del día.
+     *
+     * @param dia Calendar con el día a representar
+     * @return Vista de la celda lista para añadir al GridLayout
+     */
     private View crearCeldaDia(Calendar dia) {
         TextView tv = new TextView(requireContext());
         GridLayout.LayoutParams params = new GridLayout.LayoutParams();
@@ -581,11 +630,14 @@ public class ClienteSessionsFragment extends Fragment
     }
 
 
-    /* ── Utilidades ──────────────────────────────────────────────────── */
-
     /**
      * Calcula el timestamp de fin de sesión.
      * Puerto exacto de getFechaFin() del componente Angular.
+     *
+     * @param reserva Reserva de la que se toma la fecha base (timestamp epoch)
+     * @param sesion  Sesión vinculada de la que se extrae {@code horaFin}; si es
+     *                {@code null} se usa "23:59" como fallback
+     * @return Timestamp en milisegundos del momento de fin de la sesión
      */
     private long getFechaFin(Booking reserva, Session sesion) {
         String horaFin = (sesion != null && sesion.getHoraFin() != null)
@@ -600,7 +652,12 @@ public class ClienteSessionsFragment extends Fragment
         return cal.getTimeInMillis();
     }
 
-    /** Busca una sesión en la cache local por su id. */
+    /**
+     * Busca una sesión en la caché local por su ID.
+     *
+     * @param sesionId ID de la sesión a buscar
+     * @return La {@link Session} encontrada, o {@code null} si no existe en la caché
+     */
     private Session getSesionById(String sesionId) {
         if (sesionId == null) return null;
         for (Session s : todasLasSesiones) {
@@ -609,7 +666,14 @@ public class ClienteSessionsFragment extends Fragment
         return null;
     }
 
-    /** Devuelve la horaInicio de la sesión vinculada a sesionId, o "" si no existe. */
+    /**
+     * Devuelve la horaInicio de la sesión vinculada a {@code sesionId}.
+     * Si la sesión no existe en la caché o no tiene horaInicio definida devuelve
+     * cadena vacía para que el comparador de orden funcione sin NPE.
+     *
+     * @param sesionId ID de la sesión cuya hora de inicio se quiere obtener
+     * @return Cadena con la hora de inicio en formato HH:mm, o "" si no está disponible
+     */
     private String getSesionHoraInicio(String sesionId) {
         Session s = getSesionById(sesionId);
         return (s != null && s.getHoraInicio() != null) ? s.getHoraInicio() : "";
@@ -618,6 +682,9 @@ public class ClienteSessionsFragment extends Fragment
     /**
      * Clave YYYY-M-D desde timestamp epoch.
      * Equivale a claveDia() del componente Angular.
+     *
+     * @param timestamp Fecha en milisegundos desde epoch
+     * @return Cadena con formato "año-mes-día" (mes sin padding, 0-indexed igual que en Angular)
      */
     private String claveDia(long timestamp) {
         Calendar c = Calendar.getInstance();
@@ -626,23 +693,48 @@ public class ClienteSessionsFragment extends Fragment
                 + "-" + c.get(Calendar.DAY_OF_MONTH);
     }
 
-    /** Clave YYYY-M-D desde Calendar. */
+    /**
+     * Clave YYYY-M-D desde un objeto {@link Calendar}.
+     * Versión complementaria de {@link #claveDia(long)} para usarla directamente
+     * con las fechas del calendario sin pasar por timestamp.
+     *
+     * @param cal Instancia de Calendar con la fecha a convertir
+     * @return Cadena con formato "año-mes-día" (mes sin padding, 0-indexed)
+     */
     private String claveDiaDesdeCalendar(Calendar cal) {
         return cal.get(Calendar.YEAR) + "-" + cal.get(Calendar.MONTH)
                 + "-" + cal.get(Calendar.DAY_OF_MONTH);
     }
 
+    /**
+     * Comprueba si el día proporcionado coincide con la fecha de hoy.
+     *
+     * @param dia Calendar con el día a evaluar
+     * @return {@code true} si el día es hoy; {@code false} en caso contrario
+     */
     private boolean esHoy(Calendar dia) {
         Calendar hoy = Calendar.getInstance();
         return dia.get(Calendar.DAY_OF_YEAR) == hoy.get(Calendar.DAY_OF_YEAR)
                 && dia.get(Calendar.YEAR) == hoy.get(Calendar.YEAR);
     }
 
+    /**
+     * Comprueba si el día proporcionado coincide con la fecha actualmente seleccionada.
+     *
+     * @param dia Calendar con el día a evaluar
+     * @return {@code true} si el día está seleccionado; {@code false} en caso contrario
+     */
     private boolean esSeleccionado(Calendar dia) {
         return dia.get(Calendar.DAY_OF_YEAR) == fechaSeleccionada.get(Calendar.DAY_OF_YEAR)
                 && dia.get(Calendar.YEAR) == fechaSeleccionada.get(Calendar.YEAR);
     }
 
+    /**
+     * Comprueba si el día proporcionado es anterior a hoy (ignorando la hora).
+     *
+     * @param dia Calendar con el día a evaluar
+     * @return {@code true} si el día ya ha pasado; {@code false} en caso contrario
+     */
     private boolean esPasado(Calendar dia) {
         Calendar hoy = Calendar.getInstance();
         hoy.set(Calendar.HOUR_OF_DAY, 0);
@@ -664,11 +756,19 @@ public class ClienteSessionsFragment extends Fragment
         }
     }
 
+    /**
+     * Actualiza el TextView de cabecera con el nombre del día actualmente seleccionado
+     * formateado en español (ej: "lunes 5 de mayo").
+     */
     private void actualizarCabeceraDia() {
         if (!isAdded()) return;
         tvFechaSeleccionada.setText(capitalizar(sdfDia.format(fechaSeleccionada.getTime())));
     }
 
+    /**
+     * Alterna la visibilidad del RecyclerView y el texto vacío de reservas del día
+     * según si la lista {@code reservasDelDia} tiene o no elementos.
+     */
     private void actualizarEstadoVacioReservasDia() {
         if (!isAdded()) return;
         if (reservasDelDia.isEmpty()) {
@@ -680,6 +780,10 @@ public class ClienteSessionsFragment extends Fragment
         }
     }
 
+    /**
+     * Alterna la visibilidad del RecyclerView y el texto vacío de reservas pendientes
+     * según si la lista {@code reservasPendientes} tiene o no elementos.
+     */
     private void actualizarEstadoVacioPendientes() {
         if (!isAdded()) return;
         if (reservasPendientes.isEmpty()) {
@@ -691,6 +795,10 @@ public class ClienteSessionsFragment extends Fragment
         }
     }
 
+    /**
+     * Alterna la visibilidad del RecyclerView y el texto vacío del historial
+     * según si la lista {@code reservasHistorial} tiene o no elementos.
+     */
     private void actualizarEstadoVacioHistorial() {
         if (!isAdded()) return;
         if (reservasHistorial.isEmpty()) {
@@ -702,16 +810,37 @@ public class ClienteSessionsFragment extends Fragment
         }
     }
 
+    /**
+     * Convierte la primera letra de un texto a mayúscula.
+     * Se usa para formatear los nombres de mes y día devueltos por {@link SimpleDateFormat}
+     * en minúsculas por la configuración regional española.
+     *
+     * @param texto Cadena a capitalizar
+     * @return Cadena con la primera letra en mayúscula, o el mismo texto si es nulo o vacío
+     */
     private String capitalizar(String texto) {
         if (texto == null || texto.isEmpty()) return texto;
         return Character.toUpperCase(texto.charAt(0)) + texto.substring(1);
     }
 
+    /**
+     * Convierte una medida en dp a píxeles usando la densidad de pantalla del dispositivo.
+     *
+     * @param dp Valor en density-independent pixels a convertir
+     * @return Valor equivalente en píxeles redondeado al entero más cercano
+     */
     private int dpToPx(int dp) {
         float density = requireContext().getResources().getDisplayMetrics().density;
         return Math.round(dp * density);
     }
 
+    /**
+     * Aplica alineación centrada al texto del {@link Snackbar} proporcionado.
+     * Extraído como método auxiliar para reutilizarlo tanto en los Snackbars simples
+     * como en los de confirmación con acción.
+     *
+     * @param snackbar Snackbar cuyo texto se va a centrar
+     */
     private void centrarTextoSnackbar(Snackbar snackbar) {
         TextView tv = snackbar.getView().findViewById(
                 com.google.android.material.R.id.snackbar_text);
@@ -721,6 +850,13 @@ public class ClienteSessionsFragment extends Fragment
         }
     }
 
+    /**
+     * Muestra un {@link Snackbar} con el texto centrado horizontalmente.
+     * Incluye comprobación de {@code isAdded()} para evitar llamadas cuando
+     * el fragment ya no está adjunto a su actividad.
+     *
+     * @param message Mensaje a mostrar al usuario
+     */
     private void showSnackbar(String message) {
         if (!isAdded()) return;
         Snackbar snackbar = Snackbar.make(requireView(), message, Snackbar.LENGTH_LONG);

@@ -49,8 +49,8 @@ public class SoporteAdminFragment extends Fragment {
     private TextView              tvNombreCliente;
     private TextView              tvEstadoChat;
     private android.widget.Button btnAceptarChat;
-    private ImageButton btnCerrarChat;
-    private ImageButton btnEliminarChat;
+    private ImageButton           btnCerrarChat;
+    private ImageButton           btnEliminarChat;
     private LinearLayout          layoutInputAdmin;
     private RecyclerView          rvMensajesAdmin;
     private TextInputEditText     etMensajeAdmin;
@@ -81,9 +81,11 @@ public class SoporteAdminFragment extends Fragment {
     private final Map<String, String> nombresClientes = new HashMap<>();
 
 
-
     /**
      * Método de factoría. Pasamos el rol por Bundle igual que MediaManagementFragment.
+     *
+     * @param rol Rol del usuario autenticado (ROOT o ADMINISTRADOR)
+     * @return Instancia configurada del Fragment
      */
     public static SoporteAdminFragment newInstance(Rol rol) {
         SoporteAdminFragment fragment = new SoporteAdminFragment();
@@ -93,6 +95,16 @@ public class SoporteAdminFragment extends Fragment {
         return fragment;
     }
 
+    /**
+     * Infla el layout del fragment sin inicializar vistas todavía.
+     * La inicialización real ocurre en {@link #onViewCreated} una vez que
+     * la jerarquía de vistas está completamente construida.
+     *
+     * @param inflater           Inflater proporcionado por el sistema
+     * @param container          ViewGroup padre al que se adjuntará el fragment
+     * @param savedInstanceState Estado previo del fragment, si existe
+     * @return Vista raíz del fragment
+     */
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater,
@@ -101,6 +113,14 @@ public class SoporteAdminFragment extends Fragment {
         return inflater.inflate(R.layout.fragment_soporte_admin, container, false);
     }
 
+    /**
+     * Punto de entrada principal del fragment una vez que la vista está lista.
+     * Recupera el rol, inicializa servicios, vistas y RecyclerViews, y arranca
+     * la carga inicial de datos desde Firebase.
+     *
+     * @param view               Vista raíz devuelta por {@link #onCreateView}
+     * @param savedInstanceState Estado previo del fragment, si existe
+     */
     @Override
     public void onViewCreated(@NonNull View view,
                               @Nullable Bundle savedInstanceState) {
@@ -113,6 +133,10 @@ public class SoporteAdminFragment extends Fragment {
         inicializarCarga();
     }
 
+    /**
+     * Cancela los listeners de Firebase activos para evitar fugas de memoria
+     * cuando la vista del fragment es destruida.
+     */
     @Override
     public void onDestroyView() {
         super.onDestroyView();
@@ -123,6 +147,11 @@ public class SoporteAdminFragment extends Fragment {
 
     /*Inicialización*/
 
+    /**
+     * Recupera el rol del Bundle de argumentos.
+     * Si el Bundle es nulo o contiene un valor desconocido, se asigna ADMINISTRADOR
+     * como fallback seguro.
+     */
     private void recuperarRol() {
         if (getArguments() != null) {
             try {
@@ -136,11 +165,21 @@ public class SoporteAdminFragment extends Fragment {
         }
     }
 
+    /**
+     * Instancia el servicio de soporte y obtiene el UID del administrador
+     * autenticado en la sesión activa de Firebase.
+     */
     private void inicializarServicios() {
         soporteService = new SoporteService();
         adminUid       = FirebaseAuth.getInstance().getUid();
     }
 
+    /**
+     * Enlaza todas las vistas del layout con sus variables y establece
+     * el estado inicial de visibilidad: pantalla de carga activa y contenido oculto.
+     *
+     * @param view Vista raíz del fragment desde la que se resuelven los IDs
+     */
     private void inicializarVistas(View view) {
         layoutCargando       = view.findViewById(R.id.layoutCargandoSoporteAdmin);
         layoutContenido      = view.findViewById(R.id.layoutContenidoSoporteAdmin);
@@ -163,6 +202,13 @@ public class SoporteAdminFragment extends Fragment {
         layoutContenido.setVisibility(View.GONE);
     }
 
+    /**
+     * Configura los dos RecyclerView del fragment:
+     * <ul>
+     *   <li>{@code rvSolicitudes} — lista de chats, con {@link ChatAdapter} y callback de selección.</li>
+     *   <li>{@code rvMensajesAdmin} — conversación del chat seleccionado, con {@link MensajeAdapter}.</li>
+     * </ul>
+     */
     private void configurarRecyclers() {
         chatAdapter = new ChatAdapter(this::seleccionarChat);
         rvSolicitudes.setLayoutManager(new LinearLayoutManager(requireContext()));
@@ -175,6 +221,7 @@ public class SoporteAdminFragment extends Fragment {
 
     /**
      * Comprueba que hay sesión activa e inicia la escucha de chats.
+     * Si no hay UID de administrador disponible, muestra el contenido vacío directamente.
      */
     private void inicializarCarga() {
         if (adminUid == null) {
@@ -267,6 +314,13 @@ public class SoporteAdminFragment extends Fragment {
                 });
     }
 
+    /**
+     * Devuelve el valor numérico de ordenación asociado a un {@link EstadoChat}
+     * para que la lista se muestre siempre en el orden PENDIENTE → ACTIVO → CERRADO.
+     *
+     * @param e Estado del chat a evaluar
+     * @return 0 para PENDIENTE, 1 para ACTIVO, 2 para CERRADO o estado nulo
+     */
     private int ordenEstado(EstadoChat e) {
         if (e == null) return 2;
         switch (e) {
@@ -279,6 +333,10 @@ public class SoporteAdminFragment extends Fragment {
     /**
      * Resuelve el nombre completo de cada cliente aún no conocido
      * consultando el nodo Persons de Firebase.
+     * Los resultados se cachean en {@code nombresClientes} para evitar
+     * consultas repetidas en cada re-emisión del listener de chats.
+     *
+     * @param chats Lista de chats activos de la que se extraen los IDs de cliente
      */
     private void resolverNombresClientes(List<SoporteChat> chats) {
         for (SoporteChat chat : chats) {
@@ -308,6 +366,15 @@ public class SoporteAdminFragment extends Fragment {
      * Selecciona un chat de la lista para ver su conversación.
      * No hace nada si el chat ya estaba seleccionado para no interrumpir
      * el ChildEventListener de mensajes innecesariamente.
+     * <p>
+     * Según el estado del chat delega en:
+     * <ul>
+     *   <li>ACTIVO — {@link #escucharMensajes(String)} para escucha en tiempo real.</li>
+     *   <li>PENDIENTE — {@link #cargarMensajesPendiente(String)} para carga puntual.</li>
+     *   <li>CERRADO — {@link #pararMensajesListener()} para detener cualquier escucha activa.</li>
+     * </ul>
+     *
+     * @param chat Chat pulsado en el RecyclerView de solicitudes
      */
     private void seleccionarChat(SoporteChat chat) {
         if (chatSeleccionado != null && chatSeleccionado.getId().equals(chat.getId())) return;
@@ -341,6 +408,12 @@ public class SoporteAdminFragment extends Fragment {
 
     /**
      * Actualiza la visibilidad de los botones de acción según el estado del chat.
+     * <ul>
+     *   <li>PENDIENTE — muestra "Aceptar chat".</li>
+     *   <li>ACTIVO — muestra "Cerrar chat" y el área de escritura de mensajes.</li>
+     *   <li>CERRADO — muestra "Eliminar chat".</li>
+     * </ul>
+     * Si {@code chatSeleccionado} es nulo o su estado es desconocido, oculta todos los botones.
      */
     private void actualizarBotonesAccion() {
         if (chatSeleccionado == null) return;
@@ -375,8 +448,13 @@ public class SoporteAdminFragment extends Fragment {
     }
 
     /**
-     * Inicia la escucha en tiempo real de mensajes con el guard chatIdEscuchando.
+     * Inicia la escucha en tiempo real de mensajes con el guard {@code chatIdEscuchando}.
      * Si ya estamos escuchando este chat no destruimos el ChildEventListener.
+     * <p>
+     * Tras recibir nuevos mensajes desplaza el RecyclerView al último elemento
+     * para mantener el scroll al final de la conversación.
+     *
+     * @param chatId ID del chat cuyos mensajes se van a escuchar
      */
     private void escucharMensajes(String chatId) {
         if (chatId.equals(chatIdEscuchando)) return; /* guard clave */
@@ -402,6 +480,10 @@ public class SoporteAdminFragment extends Fragment {
 
     /**
      * Carga puntual de mensajes para chats en estado PENDIENTE (sin listener continuo).
+     * A diferencia de {@link #escucharMensajes(String)}, no mantiene la conexión abierta
+     * ya que un chat pendiente no admite nuevos mensajes hasta ser aceptado.
+     *
+     * @param chatId ID del chat pendiente cuyos mensajes se van a cargar
      */
     private void cargarMensajesPendiente(String chatId) {
         pararMensajesListener();
@@ -420,6 +502,11 @@ public class SoporteAdminFragment extends Fragment {
                 });
     }
 
+    /**
+     * Cancela el ChildEventListener de mensajes activo y limpia el guard
+     * {@code chatIdEscuchando} para que el próximo chat pueda arrancar su listener
+     * desde cero sin restricciones.
+     */
     private void pararMensajesListener() {
         if (mensajesListener != null && chatIdEscuchando != null)
             soporteService.cancelarListenerMensajes(chatIdEscuchando, mensajesListener);
@@ -429,6 +516,12 @@ public class SoporteAdminFragment extends Fragment {
 
     /*Acciones con Snackbar de confirmación (igual que SportCentreDetail)*/
 
+    /**
+     * Acepta un chat en estado PENDIENTE cambiándolo a ACTIVO en Firebase.
+     * Muestra feedback al usuario tanto en caso de éxito como de error.
+     *
+     * @param chat Chat a aceptar
+     */
     private void aceptarChat(SoporteChat chat) {
         soporteService.aceptarChat(chat.getId(), new SoporteService.WriteCallback() {
             @Override public void onExito() {
@@ -442,6 +535,13 @@ public class SoporteAdminFragment extends Fragment {
         });
     }
 
+    /**
+     * Muestra un Snackbar de confirmación antes de cerrar un chat activo.
+     * Si el usuario confirma, cierra el chat en Firebase, detiene el listener
+     * de mensajes y limpia el adaptador.
+     *
+     * @param chat Chat activo a cerrar
+     */
     private void confirmarCerrarChat(SoporteChat chat) {
         if (getView() == null) return;
         Snackbar snackbar = Snackbar.make(
@@ -465,6 +565,15 @@ public class SoporteAdminFragment extends Fragment {
         snackbar.show();
     }
 
+    /**
+     * Muestra un Snackbar de confirmación antes de eliminar un chat permanentemente.
+     * Si el usuario confirma, elimina el chat de Firebase y, si era el chat actualmente
+     * seleccionado, oculta el panel de detalle y limpia el adaptador de mensajes.
+     * El texto de la acción se muestra en rojo para reforzar el carácter destructivo
+     * de la operación.
+     *
+     * @param chat Chat cerrado a eliminar
+     */
     private void confirmarEliminarChat(SoporteChat chat) {
         if (getView() == null) return;
         Snackbar snackbar = Snackbar.make(
@@ -495,6 +604,13 @@ public class SoporteAdminFragment extends Fragment {
         snackbar.show();
     }
 
+    /**
+     * Envía el mensaje escrito por el administrador al chat activo.
+     * No hace nada si el campo de texto está vacío o si {@code adminUid} es nulo.
+     * Limpia el campo de texto tras un envío exitoso.
+     *
+     * @param chatId ID del chat activo al que se enviará el mensaje
+     */
     private void enviarMensaje(String chatId) {
         if (etMensajeAdmin.getText() == null || adminUid == null) return;
         String texto = etMensajeAdmin.getText().toString().trim();
@@ -512,14 +628,24 @@ public class SoporteAdminFragment extends Fragment {
         });
     }
 
-
-
+    /**
+     * Oculta el spinner de carga y muestra el contenido principal del fragment.
+     * Incluye una comprobación de {@code isAdded()} para evitar actualizaciones de vista
+     * cuando el fragment ya no está adjunto a su actividad.
+     */
     private void mostrarContenido() {
         if (!isAdded()) return;
         layoutCargando.setVisibility(View.GONE);
         layoutContenido.setVisibility(View.VISIBLE);
     }
 
+    /**
+     * Muestra un {@link Snackbar} con el texto centrado horizontalmente.
+     * Incluye comprobaciones de seguridad para evitar llamadas cuando el fragment
+     * no está adjunto o su vista ha sido destruida.
+     *
+     * @param message Mensaje a mostrar al usuario
+     */
     private void showSnackbar(String message) {
         if (!isAdded() || getView() == null) return;
         Snackbar snackbar = Snackbar.make(requireView(), message, Snackbar.LENGTH_LONG);
@@ -527,6 +653,13 @@ public class SoporteAdminFragment extends Fragment {
         snackbar.show();
     }
 
+    /**
+     * Aplica alineación centrada al texto del {@link Snackbar} proporcionado.
+     * Extraído como método auxiliar para reutilizarlo tanto en los Snackbars simples
+     * como en los de confirmación con acción.
+     *
+     * @param snackbar Snackbar cuyo texto se va a centrar
+     */
     private void centrarTextoSnackbar(Snackbar snackbar) {
         TextView tv = snackbar.getView()
                 .findViewById(com.google.android.material.R.id.snackbar_text);

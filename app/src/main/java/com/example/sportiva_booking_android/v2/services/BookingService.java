@@ -29,7 +29,7 @@ public class BookingService {
 
 
     /**
-     * Contrato de retorno para operaciones que devuelven una lista de reservas.
+     * Contrato de retorno para operaciones que devuelven una lista de reservas
      */
     public interface BookingsCallback {
         void onBookingsObtenidas(List<Booking> bookings);
@@ -38,7 +38,7 @@ public class BookingService {
     }
 
     /**
-     * Contrato de retorno para operaciones de escritura simples (sin datos de vuelta).
+     * Contrato de retorno para operaciones de escritura simples
      */
     public interface WriteCallback {
         void onExito();

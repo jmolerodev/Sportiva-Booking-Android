@@ -28,7 +28,6 @@ import com.example.sportiva_booking_android.v2.models.SoporteChat;
 import com.example.sportiva_booking_android.v2.services.MembershipService;
 import com.example.sportiva_booking_android.v2.services.SoporteService;
 import com.example.sportiva_booking_android.v2.services.SportCentreService;
-import com.google.android.material.button.MaterialButton;
 import com.google.android.material.snackbar.Snackbar;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.firebase.auth.FirebaseAuth;
@@ -46,6 +45,7 @@ public class SoporteClienteFragment extends Fragment {
     private static final String ARG_ADMIN_ID     = "adminId";
     private static final String ARG_NOMBRE_ADMIN = "nombreAdmin";
 
+    /*Vistas — layouts de estado*/
     private View              layoutCargando;
     private View              layoutContenido;
     private LinearLayout      layoutSinMembresia;
@@ -53,22 +53,27 @@ public class SoporteClienteFragment extends Fragment {
     private LinearLayout      layoutChatPendiente;
     private LinearLayout      layoutChatActivo;
     private LinearLayout      layoutChatCerrado;
+
+    /*Vistas — formulario y conversación*/
     private TextInputEditText etPrimerMensaje;
     private TextInputEditText etMensaje;
-    private Button btnEnviarSolicitud;
-    private Button    btnNuevaSolicitud;
+    private Button            btnEnviarSolicitud;
+    private Button            btnNuevaSolicitud;
     private ImageButton       btnEnviar;
     private RecyclerView      rvMensajes;
     private RecyclerView      rvMensajesPendiente;
     private TextView          tvNombreAdmin;
 
+    /*Adaptadores*/
     private MensajeAdapter mensajeAdapter;
     private MensajeAdapter mensajePendienteAdapter;
 
+    /*Servicios*/
     private SoporteService     soporteService;
     private MembershipService  membershipService;
     private SportCentreService sportCentreService;
 
+    /*Estado*/
     private Rol         rolUsuarioLogueado;
     private String      clienteUid;
     private String      centroId;
@@ -76,12 +81,23 @@ public class SoporteClienteFragment extends Fragment {
     private String      nombreAdmin;
     private SoporteChat chatActual;
 
+    /* Guard: evita destruir el ChildEventListener de mensajes cuando
+     * escucharChatsByCliente re-emite por un cambio de fechaUltimoMensaje */
     private String chatIdEscuchando;
 
+    /*Listeners Firebase (cancelados en onDestroyView)*/
     private ValueEventListener chatsListener;
     private ChildEventListener mensajesListener;
 
 
+    /**
+     * Método de factoría para navegación general desde el menú principal.
+     * Solo recibe el rol; centroId y adminId se resuelven internamente a partir
+     * de la membresía activa del cliente.
+     *
+     * @param rol Rol del usuario autenticado (normalmente CLIENTE)
+     * @return Instancia configurada del Fragment
+     */
     public static SoporteClienteFragment newInstance(Rol rol) {
         SoporteClienteFragment fragment = new SoporteClienteFragment();
         Bundle args = new Bundle();
@@ -90,6 +106,17 @@ public class SoporteClienteFragment extends Fragment {
         return fragment;
     }
 
+    /**
+     * Método de factoría para navegación directa desde la vista de detalle de un centro.
+     * Recibe centroId, adminId y nombreAdmin ya resueltos para evitar consultas adicionales
+     * a Firebase cuando el contexto del centro ya es conocido.
+     *
+     * @param rol         Rol del usuario autenticado (normalmente CLIENTE)
+     * @param centroId    ID del centro deportivo desde el que se abre el soporte
+     * @param adminId     UID del administrador del centro
+     * @param nombreAdmin Nombre completo del administrador, mostrado en la cabecera del chat
+     * @return Instancia configurada del Fragment
+     */
     public static SoporteClienteFragment newInstanceFromCentro(Rol rol,
                                                                String centroId,
                                                                String adminId,
@@ -104,6 +131,16 @@ public class SoporteClienteFragment extends Fragment {
         return fragment;
     }
 
+    /**
+     * Infla el layout del fragment sin inicializar vistas todavía.
+     * La inicialización real ocurre en {@link #onViewCreated} una vez que
+     * la jerarquía de vistas está completamente construida.
+     *
+     * @param inflater           Inflater proporcionado por el sistema
+     * @param container          ViewGroup padre al que se adjuntará el fragment
+     * @param savedInstanceState Estado previo del fragment, si existe
+     * @return Vista raíz del fragment
+     */
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater,
@@ -112,6 +149,14 @@ public class SoporteClienteFragment extends Fragment {
         return inflater.inflate(R.layout.fragment_soporte_cliente, container, false);
     }
 
+    /**
+     * Punto de entrada principal del fragment una vez que la vista está lista.
+     * Recupera argumentos, inicializa servicios, vistas y RecyclerViews, y arranca
+     * la carga inicial decidiendo si resolver la membresía o usar el centro ya conocido.
+     *
+     * @param view               Vista raíz devuelta por {@link #onCreateView}
+     * @param savedInstanceState Estado previo del fragment, si existe
+     */
     @Override
     public void onViewCreated(@NonNull View view,
                               @Nullable Bundle savedInstanceState) {
@@ -123,6 +168,10 @@ public class SoporteClienteFragment extends Fragment {
         inicializarCarga();
     }
 
+    /**
+     * Cancela los listeners de Firebase activos para evitar fugas de memoria
+     * cuando la vista del fragment es destruida.
+     */
     @Override
     public void onDestroyView() {
         super.onDestroyView();
@@ -130,6 +179,12 @@ public class SoporteClienteFragment extends Fragment {
         pararMensajesListener();
     }
 
+    /**
+     * Recupera rol, centroId, adminId y nombreAdmin del Bundle de argumentos.
+     * Si el Bundle es nulo o el rol es desconocido, se asigna CLIENTE como fallback seguro.
+     * centroId, adminId y nombreAdmin pueden ser nulos si el fragment se abrió desde
+     * el menú general y aún no se ha resuelto la membresía.
+     */
     private void recuperarArgumentos() {
         if (getArguments() != null) {
             try {
@@ -146,6 +201,10 @@ public class SoporteClienteFragment extends Fragment {
         }
     }
 
+    /**
+     * Instancia los servicios necesarios y obtiene el UID del cliente
+     * autenticado en la sesión activa de Firebase.
+     */
     private void inicializarServicios() {
         soporteService     = new SoporteService();
         membershipService  = new MembershipService();
@@ -153,6 +212,12 @@ public class SoporteClienteFragment extends Fragment {
         clienteUid         = FirebaseAuth.getInstance().getUid();
     }
 
+    /**
+     * Enlaza todas las vistas del layout con sus variables y establece
+     * el estado inicial de visibilidad: pantalla de carga activa y contenido oculto.
+     *
+     * @param view Vista raíz del fragment desde la que se resuelven los IDs
+     */
     private void inicializarVistas(View view) {
         layoutCargando      = view.findViewById(R.id.layoutCargandoSoporteCliente);
         layoutContenido     = view.findViewById(R.id.layoutContenidoSoporteCliente);
@@ -174,6 +239,15 @@ public class SoporteClienteFragment extends Fragment {
         layoutContenido.setVisibility(View.GONE);
     }
 
+    /**
+     * Configura los dos RecyclerView del fragment:
+     * <ul>
+     *   <li>{@code rvMensajes} — conversación del chat activo.</li>
+     *   <li>{@code rvMensajesPendiente} — mensajes del chat mientras está en estado PENDIENTE.</li>
+     * </ul>
+     * Ambos usan {@link MensajeAdapter} inicializado con el UID del cliente para
+     * diferenciar visualmente los mensajes propios de los del administrador.
+     */
     private void configurarRecyclers() {
         String uid = clienteUid != null ? clienteUid : "";
 
@@ -186,6 +260,16 @@ public class SoporteClienteFragment extends Fragment {
         rvMensajesPendiente.setAdapter(mensajePendienteAdapter);
     }
 
+    /**
+     * Decide el flujo de carga inicial según el contexto con el que fue abierto el fragment:
+     * <ul>
+     *   <li>Sin UID de cliente — muestra el empty state de membresía directamente.</li>
+     *   <li>Con centroId y adminId ya resueltos (venimos de un centro) — muestra el nombre
+     *       del administrador y arranca la escucha de chats.</li>
+     *   <li>Sin centroId ni adminId (acceso desde menú general) — resuelve primero la membresía
+     *       activa del cliente antes de arrancar la escucha.</li>
+     * </ul>
+     */
     private void inicializarCarga() {
         if (clienteUid == null) {
             mostrarContenido();
@@ -202,6 +286,14 @@ public class SoporteClienteFragment extends Fragment {
         }
     }
 
+    /**
+     * Obtiene las membresías del cliente y selecciona la primera membresía ACTIVA
+     * y no caducada para extraer el centroId.
+     * <p>
+     * Si no existe ninguna membresía válida, muestra el empty state de membresía.
+     * Si se encuentra una activa, resuelve el nombre del administrador del centro
+     * mediante {@link #resolverNombreAdmin(String)} y arranca la escucha de chats.
+     */
     private void cargarMembresiaYChat() {
         membershipService.getMembresiasByCliente(clienteUid,
                 new MembershipService.MembershipListCallback() {
@@ -239,6 +331,14 @@ public class SoporteClienteFragment extends Fragment {
                 });
     }
 
+    /**
+     * Resuelve el nombre completo del administrador del centro a partir de su UID.
+     * Primero obtiene el centro para extraer {@code adminUid}, luego consulta
+     * el nodo Persons de Firebase para componer nombre y apellidos.
+     * Si el nodo no existe, asigna "Soporte" como nombre de fallback.
+     *
+     * @param cId ID del centro deportivo cuyo administrador se quiere resolver
+     */
     private void resolverNombreAdmin(String cId) {
         sportCentreService.getSportCentreByUid(cId, centro -> {
             if (getActivity() == null || centro == null) return;
@@ -264,6 +364,18 @@ public class SoporteClienteFragment extends Fragment {
         });
     }
 
+    /**
+     * Escucha en tiempo real todos los chats del cliente y filtra los que pertenecen
+     * al centro actual. Determina el chat relevante priorizando los estados abiertos
+     * (PENDIENTE o ACTIVO) sobre el CERRADO más reciente.
+     * <p>
+     * Transiciones gestionadas:
+     * <ul>
+     *   <li>Chat ACTIVO recién recibido sin chat anterior — arranca la escucha de mensajes.</li>
+     *   <li>Chat que pasa de PENDIENTE a ACTIVO — notifica al cliente y arranca mensajes.</li>
+     * </ul>
+     * Tras cada emisión actualiza la vista de estado mediante {@link #mostrarEstadoChat()}.
+     */
     private void escucharChats() {
         chatsListener = soporteService.escucharChatsByCliente(clienteUid,
                 new SoporteService.ChatsCallback() {
@@ -326,6 +438,15 @@ public class SoporteClienteFragment extends Fragment {
                 });
     }
 
+    /**
+     * Actualiza la vista de estado del chat según el valor de {@code chatActual}:
+     * <ul>
+     *   <li>{@code null} — muestra el formulario de nueva solicitud.</li>
+     *   <li>PENDIENTE — muestra el panel de espera y carga los mensajes de forma puntual.</li>
+     *   <li>ACTIVO — muestra el panel de conversación y conecta el botón de envío.</li>
+     *   <li>CERRADO — muestra el panel de chat cerrado y permite abrir una nueva solicitud.</li>
+     * </ul>
+     */
     private void mostrarEstadoChat() {
         if (chatActual == null) {
             mostrarLayout(layoutSolicitarChat);
@@ -362,6 +483,15 @@ public class SoporteClienteFragment extends Fragment {
         }
     }
 
+    /**
+     * Inicia la escucha en tiempo real de mensajes con el guard {@code chatIdEscuchando}.
+     * Si ya estamos escuchando este chat no destruimos el ChildEventListener.
+     * <p>
+     * Tras recibir nuevos mensajes desplaza el RecyclerView al último elemento
+     * para mantener el scroll al final de la conversación.
+     *
+     * @param chatId ID del chat activo cuyos mensajes se van a escuchar
+     */
     private void escucharMensajes(String chatId) {
         if (chatId.equals(chatIdEscuchando)) return;
 
@@ -384,6 +514,13 @@ public class SoporteClienteFragment extends Fragment {
                 });
     }
 
+    /**
+     * Carga puntual de mensajes para chats en estado PENDIENTE (sin listener continuo).
+     * A diferencia de {@link #escucharMensajes(String)}, no mantiene la conexión abierta
+     * ya que un chat pendiente no admite nuevos mensajes hasta ser aceptado por el administrador.
+     *
+     * @param chatId ID del chat pendiente cuyos mensajes se van a cargar
+     */
     private void cargarMensajesPendiente(String chatId) {
         pararMensajesListener();
         chatIdEscuchando = chatId;
@@ -401,6 +538,11 @@ public class SoporteClienteFragment extends Fragment {
                 });
     }
 
+    /**
+     * Cancela el ChildEventListener de mensajes activo y limpia el guard
+     * {@code chatIdEscuchando} para que el próximo chat pueda arrancar su listener
+     * desde cero sin restricciones.
+     */
     private void pararMensajesListener() {
         if (mensajesListener != null && chatIdEscuchando != null)
             soporteService.cancelarListenerMensajes(chatIdEscuchando, mensajesListener);
@@ -408,6 +550,12 @@ public class SoporteClienteFragment extends Fragment {
         chatIdEscuchando = null;
     }
 
+    /**
+     * Envía la solicitud de soporte inicial creando un nuevo chat en Firebase.
+     * Valida que el campo del primer mensaje no esté vacío y que todos los datos
+     * necesarios (clienteUid, centroId, adminId) estén disponibles antes de operar.
+     * Deshabilita el botón durante la operación para evitar doble envío.
+     */
     private void solicitarChat() {
         if (etPrimerMensaje.getText() == null) return;
         String texto = etPrimerMensaje.getText().toString().trim();
@@ -440,6 +588,13 @@ public class SoporteClienteFragment extends Fragment {
                 });
     }
 
+    /**
+     * Envía el mensaje escrito por el cliente al chat activo.
+     * No hace nada si el campo de texto está vacío o si {@code clienteUid} es nulo.
+     * Limpia el campo de texto tras un envío exitoso.
+     *
+     * @param chatId ID del chat activo al que se enviará el mensaje
+     */
     private void enviarMensaje(String chatId) {
         if (etMensaje.getText() == null || clienteUid == null) return;
         String texto = etMensaje.getText().toString().trim();
@@ -457,6 +612,13 @@ public class SoporteClienteFragment extends Fragment {
         });
     }
 
+    /**
+     * Oculta todos los layouts de estado y muestra únicamente el indicado.
+     * Centraliza la lógica de visibilidad para evitar repetir la secuencia
+     * de GONE/VISIBLE en cada punto del fragment que necesite cambiar de estado.
+     *
+     * @param visible Layout que debe quedar visible tras la llamada
+     */
     private void mostrarLayout(View visible) {
         layoutSinMembresia.setVisibility(View.GONE);
         layoutSolicitarChat.setVisibility(View.GONE);
@@ -466,12 +628,24 @@ public class SoporteClienteFragment extends Fragment {
         visible.setVisibility(View.VISIBLE);
     }
 
+    /**
+     * Oculta el spinner de carga y muestra el contenido principal del fragment.
+     * Incluye una comprobación de {@code isAdded()} para evitar actualizaciones de vista
+     * cuando el fragment ya no está adjunto a su actividad.
+     */
     private void mostrarContenido() {
         if (!isAdded()) return;
         layoutCargando.setVisibility(View.GONE);
         layoutContenido.setVisibility(View.VISIBLE);
     }
 
+    /**
+     * Muestra un {@link Snackbar} con el texto centrado horizontalmente.
+     * Incluye comprobaciones de seguridad para evitar llamadas cuando el fragment
+     * no está adjunto o su vista ha sido destruida.
+     *
+     * @param message Mensaje a mostrar al usuario
+     */
     private void showSnackbar(String message) {
         if (!isAdded() || getView() == null) return;
         Snackbar snackbar = Snackbar.make(requireView(), message, Snackbar.LENGTH_LONG);
@@ -479,6 +653,13 @@ public class SoporteClienteFragment extends Fragment {
         snackbar.show();
     }
 
+    /**
+     * Aplica alineación centrada al texto del {@link Snackbar} proporcionado.
+     * Extraído como método auxiliar para reutilizarlo tanto en los Snackbars simples
+     * como en los de confirmación con acción.
+     *
+     * @param snackbar Snackbar cuyo texto se va a centrar
+     */
     private void centrarTextoSnackbar(Snackbar snackbar) {
         TextView tv = snackbar.getView()
                 .findViewById(com.google.android.material.R.id.snackbar_text);
